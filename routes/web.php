@@ -8,8 +8,17 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 
 Route::get('/', function () {
-    return Inertia::render('landing'); // Ubah 'Welcome' menjadi 'Home' (sesuai nama file Anda tanpa ekstensi)
-});
+    return inertia('landing');
+})->name('home');
+
+
+Route::get('/login', function () {
+    return Inertia::render('auth/login'); // Ubah 'Welcome' menjadi 'Home' (sesuai nama file Anda tanpa ekstensi)
+})->name('login');
+
+Route::get('/register', function () {
+    return Inertia::render('auth/register'); // Ubah 'Welcome' menjadi 'Home' (sesuai nama file Anda tanpa ekstensi)
+})->name('register');
 
 Route::get('/calendar', function () {
     return Inertia::render('Calendar'); // Nama 'Calendar' harus sama persis dengan nama file Calendar.tsx

@@ -13,8 +13,8 @@ import AuthLayout from '@/layouts/auth-layout';
 export default function Register() {
     return (
         <AuthLayout
-            title="Create an account"
-            description="Enter your details below to create your account"
+            title="Buat Akun Saintara"
+            
         >
             <Head title="Register" />
             <Form
@@ -27,25 +27,42 @@ export default function Register() {
                     <>
                         <div className="grid gap-6">
                             <div className="grid gap-2">
-                                <Label htmlFor="name">Name</Label>
+                                <Label htmlFor="namalengkap">Nama Lengkap</Label>
                                 <Input
-                                    id="name"
+                                    id="namalengkap"
                                     type="text"
                                     required
                                     autoFocus
                                     tabIndex={1}
-                                    autoComplete="name"
-                                    name="name"
-                                    placeholder="Full name"
+                                    autoComplete="namalengkap"
+                                    name="namalengkap"
+                                    
                                 />
                                 <InputError
-                                    message={errors.name}
+                                    message={errors.namalengkap}
+                                    className="mt-2"
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="namapanggilan">Nama Panggilan</Label>
+                                <Input
+                                    id="namapanggilan"
+                                    type="text"
+                                    required
+                                    autoFocus
+                                    tabIndex={1}
+                                    autoComplete="namapanggilan"
+                                    name="namapanggilan"
+                                    
+                                />
+                                <InputError
+                                    message={errors.namapanggilan}
                                     className="mt-2"
                                 />
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="email">Email address</Label>
+                                <Label htmlFor="email">Email </Label>
                                 <Input
                                     id="email"
                                     type="email"
@@ -56,6 +73,55 @@ export default function Register() {
                                     placeholder="email@example.com"
                                 />
                                 <InputError message={errors.email} />
+                            </div>
+
+                                      <div className="grid gap-2">
+                                <Label htmlFor="notelp">Nomor Telepon </Label>
+                                <Input
+                                    id="notelp"
+                                    type="number"
+                                    required
+                                    tabIndex={2}
+                                    autoComplete="notelp"
+                                    name="notelp"
+                                />
+                                <InputError message={errors.notelp} />
+                            </div>
+
+                                        <div className="grid gap-2">
+                                <Label htmlFor="negara">Negara</Label>
+                                <Input
+                                    id="negara"
+                                    type="text"
+                                    required
+                                    autoFocus
+                                    tabIndex={1}
+                                    autoComplete="negara"
+                                    name="negara"
+                                    
+                                />
+                                <InputError
+                                    message={errors.negara}
+                                    className="mt-2"
+                                />
+                            </div>
+
+                                        <div className="grid gap-2">
+                                <Label htmlFor="kota">Kota</Label>
+                                <Input
+                                    id="kota"
+                                    type="text"
+                                    required
+                                    autoFocus
+                                    tabIndex={1}
+                                    autoComplete="kota"
+                                    name="kota"
+                                    
+                                />
+                                <InputError
+                                    message={errors.kota}
+                                    className="mt-2"
+                                />
                             </div>
 
                             <div className="grid gap-2">
@@ -92,19 +158,19 @@ export default function Register() {
 
                             <Button
                                 type="submit"
-                                className="mt-2 w-full"
+                                className="mt-2 w-full rounded-3xl cursor-pointer"
                                 tabIndex={5}
                                 data-test="register-user-button"
                             >
                                 {processing && <Spinner />}
-                                Create account
+                                Buat Akun
                             </Button>
                         </div>
 
                         <div className="text-center text-sm text-muted-foreground">
-                            Already have an account?{' '}
+                            Sudah punya akun?{' '}
                             <TextLink href={login()} tabIndex={6}>
-                                Log in
+                                Masuk
                             </TextLink>
                         </div>
                     </>

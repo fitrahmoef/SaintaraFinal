@@ -1,4 +1,4 @@
-import DashboardLayout from '@/layouts/dashboardLayoutPersonal';
+import DashboardLayout from '@/layouts/dashboard-layout-personal';
 import { Head } from '@inertiajs/react';
 import { useState } from 'react';
 

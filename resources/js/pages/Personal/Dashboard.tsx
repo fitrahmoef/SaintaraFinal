@@ -1,4 +1,4 @@
-import DashboardLayout from '@/layouts/dashboardLayoutPersonal'; // Import Layout
+import DashboardLayout from '@/layouts/dashboard-layout-personal'; // Import Layout
 import { Head, Link } from '@inertiajs/react'; // GANTI INI
 import { useState } from 'react';
 import {
@@ -93,7 +93,7 @@ export default function Dashboard() {
                                         Beli Token
                                     </h4>
                                     <Link
-                                        href="/personal/buy-tokens"
+                                        href="/personal/transaksi-token"
                                         className="mt-1 text-sm font-semibold text-saintara-yellow hover:underline"
                                     >
                                         Beli Sekarang →

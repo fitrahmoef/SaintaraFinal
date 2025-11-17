@@ -27,9 +27,11 @@ export default function DaftarTesKarakter() {
                 <p>✔ Laporan 10 Karakter</p>
                 <p>✔ Analisis Karakter Alami</p>
               </div>
-              <button className="bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800">
-                Mulai Tes
-              </button>
+              <a href="formTes">
+                <button className="bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800">
+                  Mulai Tes
+                </button>
+              </a>
             </div>
 
             {/* Standar */}

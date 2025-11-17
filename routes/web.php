@@ -30,7 +30,7 @@ Route::prefix('personal')->group(function () {
     // Dashboard Personal
     Route::get('/dashboardPersonal', function () {
         // Pastikan file ada di: resources/js/Pages/Personal/Dashboard.tsx
-        return Inertia::render('Personal/dashboard');
+        return Inertia::render('Personal/dashboard-personal');
     })->name('personal.dashboard');
 
     // Profil Personal
@@ -75,14 +75,21 @@ Route::prefix('personal')->group(function () {
         return Inertia::render('Personal/setting');
     })->name('personal.setting');
 
+    // Form Tes Karakter
+    Route::get('/formTes', function () {
+        // Pastikan file ada di: resources/js/Pages/Personal/Profile.tsx
+        return Inertia::render('Personal/form-tes-personal');
+    })->name('personal.form-tes');
+
 });
 
+// admin routes
 Route::prefix('admin')->group(function () {
 
-    // Dashboard Personal
+    // Dashboard admin
     Route::get('/dashboardAdmin', function () {
         // Pastikan file ada di: resources/js/Pages/Personal/Dashboard.tsx
-        return Inertia::render('Admin/Dashboard');
+        return Inertia::render('Admin/dashboard-admin');
     })->name('admin.dashboard');
 
     // Profil Personal
@@ -121,6 +128,16 @@ Route::prefix('admin')->group(function () {
         return Inertia::render('Admin/Pengaturan');
     })->name('admin.settings');
 
+});
+
+// instansi routes
+Route::prefix('instansi')->group(function () {
+
+    // form tes instansi
+    Route::get('/formTesInstansi', function () {
+        // Pastikan file ada di: resources/js/Pages/Personal/Dashboard.tsx
+        return Inertia::render('Instansi/form-tes-instansi');
+    })->name('instansi.form-tes-instansi');
 });
 
 

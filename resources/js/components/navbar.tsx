@@ -67,12 +67,21 @@ export default function Navbar() {
                             )}
                         </div>
                     ) : (
-                        <Link
-                            href="/login"
-                            className="transform rounded-full bg-gray-900 px-6 py-2.5 text-center text-sm font-medium text-white shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:bg-black hover:shadow-xl focus:ring-4 focus:ring-gray-300"
-                        >
-                            MASUK
-                        </Link>
+                        <>
+                            <Link
+                                href="/register"
+                                className="transform rounded-full bg-yellow-500 px-6 py-2.5 text-center text-sm font-medium text-white shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:bg-yellow-600 hover:shadow-xl focus:ring-4 focus:ring-yellow-300"
+                            >
+                                DAFTAR
+                            </Link>
+
+                            <Link
+                                href="/login"
+                                className="transform rounded-full bg-gray-900 px-6 py-2.5 text-center text-sm font-medium text-white shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:bg-black hover:shadow-xl focus:ring-4 focus:ring-gray-300"
+                            >
+                                MASUK
+                            </Link>
+                        </>
                     )}
 
                     {/* Mobile Menu Button */}

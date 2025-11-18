@@ -9,6 +9,7 @@ use App\Models\TokenPurchase;
 use App\Models\TokenUsage;
 use App\Models\Certificate;
 use App\Models\Customer;
+use App\Services\CharacterAnalysisService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -87,20 +88,24 @@ class TestController extends Controller
 
         DB::beginTransaction();
         try {
-            // Calculate result (simplified version)
-            $skor = $this->calculateScore($request->jawaban);
-            $hasil_karakter = $this->determineCharacter($skor);
+            // Calculate character using Numerology Algorithm
+            $analysisService = new CharacterAnalysisService();
+            $result = $analysisService->calculateCharacterType($customer, $request->jawaban, $test->id);
+
+            $characterType = $result['character_type'];
+            $skor = $result['score'];
+            $analisis = $result['analysis'];
 
             // Create test result
             $testResult = TestResult::create([
                 'test_id' => $test->id,
                 'customer_id' => $customer->id,
                 'token_purchase_id' => $availableToken->id,
-                'hasil_karakter' => $hasil_karakter,
-                'deskripsi_hasil' => $this->getCharacterDescription($hasil_karakter),
+                'hasil_karakter' => $characterType->name,
+                'deskripsi_hasil' => $characterType->description,
                 'skor' => $skor,
                 'jawaban' => $request->jawaban,
-                'analisis' => $this->generateAnalysis($request->jawaban, $skor),
+                'analisis' => $analisis,
                 'tanggal_tes' => now(),
                 'waktu_mulai' => $request->waktu_mulai,
                 'waktu_selesai' => $request->waktu_selesai,
@@ -217,45 +222,17 @@ class TestController extends Controller
         ]);
     }
 
-    private function calculateScore(array $jawaban): int
-    {
-        // Simplified scoring logic
-        return count($jawaban) * 10;
-    }
-
-    private function determineCharacter(int $skor): string
-    {
-        // Simplified character determination
-        if ($skor >= 80) {
-            return 'INTJ - The Architect';
-        } elseif ($skor >= 60) {
-            return 'ENFP - The Campaigner';
-        } elseif ($skor >= 40) {
-            return 'ISTJ - The Logistician';
-        } else {
-            return 'ESFP - The Entertainer';
-        }
-    }
-
-    private function getCharacterDescription(string $karakter): string
-    {
-        $descriptions = [
-            'INTJ - The Architect' => 'Strategic thinkers who plan and organize everything meticulously.',
-            'ENFP - The Campaigner' => 'Enthusiastic, creative, and sociable free spirits.',
-            'ISTJ - The Logistician' => 'Practical and fact-minded individuals, whose reliability cannot be doubted.',
-            'ESFP - The Entertainer' => 'Spontaneous, energetic, and enthusiastic people.',
-        ];
-
-        return $descriptions[$karakter] ?? 'Karakter unik dengan potensi luar biasa.';
-    }
-
-    private function generateAnalysis(array $jawaban, int $skor): array
-    {
-        return [
-            'total_jawaban' => count($jawaban),
-            'skor_total' => $skor,
-            'kategori' => $skor >= 60 ? 'Tinggi' : ($skor >= 40 ? 'Sedang' : 'Rendah'),
-            'rekomendasi' => 'Terus kembangkan potensi diri Anda melalui pembelajaran dan pengalaman.',
-        ];
-    }
+    /**
+     * Legacy methods removed - now using CharacterAnalysisService
+     * See: app/Services/CharacterAnalysisService.php
+     *
+     * The new service provides:
+     * - Life Path Number calculation from birth date
+     * - Expression Number from full name
+     * - Soul Urge Number from nickname
+     * - Blood type modifier
+     * - Gender modifier
+     * - Test answer analysis
+     * - Comprehensive numerology-based character mapping
+     */
 }

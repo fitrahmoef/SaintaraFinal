@@ -102,6 +102,11 @@ Route::prefix('personal')->middleware(['auth', 'user.type:personal'])->group(fun
         return Inertia::render('Personal/form-tes-personal');
     })->name('personal.form-tes');
 
+    // Test Execution Page
+    Route::get('/test/execute', function () {
+        return Inertia::render('Personal/TestExecution');
+    })->name('personal.test.execute');
+
     // Payment Success/Error Pages
     Route::get('/payment/success', [PaymentController::class, 'paymentSuccess'])->name('personal.payment.success');
     Route::get('/payment/error', [PaymentController::class, 'paymentError'])->name('personal.payment.error');

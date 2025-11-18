@@ -56,8 +56,8 @@ export default function DaftarTesKarakter() {
       return;
     }
 
-    // Navigate to test form with test ID
-    router.visit(`/personal/formTes?test_id=${testId}`);
+    // Navigate directly to test execution
+    router.visit(`/personal/test/execute?test_id=${testId}`);
   };
 
   const getTestTypeLabel = (type: string) => {

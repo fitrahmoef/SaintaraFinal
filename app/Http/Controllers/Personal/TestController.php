@@ -9,11 +9,19 @@ use App\Models\TokenPurchase;
 use App\Models\TokenUsage;
 use App\Models\Certificate;
 use App\Models\Customer;
+use App\Services\CharacterAnalysisService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class TestController extends Controller
 {
+    protected CharacterAnalysisService $characterAnalysis;
+
+    public function __construct(CharacterAnalysisService $characterAnalysis)
+    {
+        $this->characterAnalysis = $characterAnalysis;
+    }
+
     public function index()
     {
         $tests = Test::active()
@@ -35,7 +43,7 @@ class TestController extends Controller
 
     public function show($id)
     {
-        $test = Test::findOrFail($id);
+        $test = Test::with('questions')->findOrFail($id);
 
         return response()->json([
             'test' => [
@@ -47,6 +55,16 @@ class TestController extends Controller
                 'durasi' => $test->durasi_menit,
                 'token_required' => $test->token_required,
                 'metadata' => $test->metadata,
+                'questions' => $test->questions->map(function ($question) {
+                    return [
+                        'id' => $question->id,
+                        'nomor_soal' => $question->nomor_soal,
+                        'pertanyaan' => $question->pertanyaan,
+                        'tipe_soal' => $question->tipe_soal,
+                        'pilihan_jawaban' => $question->pilihan_jawaban,
+                        // Don't send bobot_karakter to frontend for security
+                    ];
+                }),
             ]
         ]);
     }
@@ -87,20 +105,31 @@ class TestController extends Controller
 
         DB::beginTransaction();
         try {
-            // Calculate result (simplified version)
-            $skor = $this->calculateScore($request->jawaban);
-            $hasil_karakter = $this->determineCharacter($skor);
+            // Validate customer data for character analysis
+            if (!$customer->nama_lengkap || !$customer->tanggal_lahir || !$customer->golongan_darah) {
+                throw new \Exception('Data profil tidak lengkap. Harap lengkapi nama, tanggal lahir, dan golongan darah.');
+            }
+
+            // Perform character analysis using real algorithm
+            $characterAnalysis = $this->characterAnalysis->analyze(
+                $customer->nama_lengkap,
+                $customer->tanggal_lahir,
+                $customer->golongan_darah
+            );
+
+            // Calculate score based on answers
+            $skor = $this->calculateScore($request->jawaban, $characterAnalysis);
 
             // Create test result
             $testResult = TestResult::create([
                 'test_id' => $test->id,
                 'customer_id' => $customer->id,
                 'token_purchase_id' => $availableToken->id,
-                'hasil_karakter' => $hasil_karakter,
-                'deskripsi_hasil' => $this->getCharacterDescription($hasil_karakter),
+                'hasil_karakter' => $characterAnalysis['character_name'],
+                'deskripsi_hasil' => $characterAnalysis['description'],
                 'skor' => $skor,
                 'jawaban' => $request->jawaban,
-                'analisis' => $this->generateAnalysis($request->jawaban, $skor),
+                'analisis' => $characterAnalysis,
                 'tanggal_tes' => now(),
                 'waktu_mulai' => $request->waktu_mulai,
                 'waktu_selesai' => $request->waktu_selesai,
@@ -217,45 +246,24 @@ class TestController extends Controller
         ]);
     }
 
-    private function calculateScore(array $jawaban): int
+    /**
+     * Calculate score based on answers and character analysis
+     * This can be enhanced based on answer weights
+     */
+    private function calculateScore(array $jawaban, array $characterAnalysis): int
     {
-        // Simplified scoring logic
-        return count($jawaban) * 10;
-    }
+        // Base score from number of answers
+        $baseScore = count($jawaban) * 5;
 
-    private function determineCharacter(int $skor): string
-    {
-        // Simplified character determination
-        if ($skor >= 80) {
-            return 'INTJ - The Architect';
-        } elseif ($skor >= 60) {
-            return 'ENFP - The Campaigner';
-        } elseif ($skor >= 40) {
-            return 'ISTJ - The Logistician';
-        } else {
-            return 'ESFP - The Entertainer';
-        }
-    }
+        // Bonus from detailed scores
+        $detailedScores = $characterAnalysis['detailed_scores'] ?? [];
+        $averageDetailedScore = !empty($detailedScores)
+            ? array_sum($detailedScores) / count($detailedScores)
+            : 50;
 
-    private function getCharacterDescription(string $karakter): string
-    {
-        $descriptions = [
-            'INTJ - The Architect' => 'Strategic thinkers who plan and organize everything meticulously.',
-            'ENFP - The Campaigner' => 'Enthusiastic, creative, and sociable free spirits.',
-            'ISTJ - The Logistician' => 'Practical and fact-minded individuals, whose reliability cannot be doubted.',
-            'ESFP - The Entertainer' => 'Spontaneous, energetic, and enthusiastic people.',
-        ];
+        // Combine scores (max 100)
+        $finalScore = min(100, ($baseScore + $averageDetailedScore) / 2);
 
-        return $descriptions[$karakter] ?? 'Karakter unik dengan potensi luar biasa.';
-    }
-
-    private function generateAnalysis(array $jawaban, int $skor): array
-    {
-        return [
-            'total_jawaban' => count($jawaban),
-            'skor_total' => $skor,
-            'kategori' => $skor >= 60 ? 'Tinggi' : ($skor >= 40 ? 'Sedang' : 'Rendah'),
-            'rekomendasi' => 'Terus kembangkan potensi diri Anda melalui pembelajaran dan pengalaman.',
-        ];
+        return (int) round($finalScore);
     }
 }

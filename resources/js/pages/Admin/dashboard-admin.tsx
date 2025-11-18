@@ -1,4 +1,4 @@
-import AdminDashboardLayout from '@/layouts/dashboardLayoutAdmin'; // Pastikan path layout benar
+import AdminDashboardLayout from '@/layouts/dashboardLayoutAdmin';
 import { Head } from '@inertiajs/react';
 import {
     HiArrowSmRight,
@@ -11,9 +11,54 @@ import {
 } from 'react-icons/hi';
 import { HiWrench } from 'react-icons/hi2';
 
-// ...rest of code...
+interface Stats {
+    total_tests_this_month: number;
+    active_agents: number;
+    talkshow_count: number;
+    webinar_count: number;
+}
 
-export default function Dashboard() {
+interface TestDistribution {
+    personal: number;
+    institution: number;
+    gift: number;
+}
+
+interface TeamMember {
+    id: number;
+    name: string;
+    department: string;
+}
+
+interface ApprovalRequest {
+    id: number;
+    category: string;
+    created_at: string;
+}
+
+interface DashboardProps {
+    stats: Stats;
+    testDistribution: TestDistribution;
+    tokenSalesThisMonth: string;
+    teamReports: TeamMember[];
+    approvalRequests: ApprovalRequest[];
+}
+
+export default function Dashboard({
+    stats,
+    testDistribution,
+    tokenSalesThisMonth,
+    teamReports,
+    approvalRequests,
+}: DashboardProps) {
+    // Calculate percentages for donut chart
+    const totalTests =
+        testDistribution.personal +
+        testDistribution.institution +
+        testDistribution.gift;
+    const personalPercentage = totalTests > 0 ? (testDistribution.personal / totalTests) * 100 : 0;
+    const giftPercentage = totalTests > 0 ? (testDistribution.gift / totalTests) * 100 : 0;
+
     return (
         <AdminDashboardLayout>
             <Head title="Dashboard Admin" />
@@ -30,7 +75,7 @@ export default function Dashboard() {
                                 Total Tes Bulan ini
                             </p>
                             <h3 className="text-3xl font-bold text-gray-800">
-                                500
+                                {stats.total_tests_this_month}
                             </h3>
                         </div>
                         {/* Mini Bar Chart Visual (CSS Only) */}
@@ -51,7 +96,7 @@ export default function Dashboard() {
                         <div>
                             <p className="text-xs text-gray-400">Agen Aktif</p>
                             <h3 className="text-2xl font-bold text-gray-800">
-                                321
+                                {stats.active_agents}
                             </h3>
                         </div>
                     </div>
@@ -66,7 +111,7 @@ export default function Dashboard() {
                                 Agenda Talkshow
                             </p>
                             <h3 className="text-xl font-bold text-gray-800">
-                                12 Talkshow
+                                {stats.talkshow_count} Talkshow
                             </h3>
                         </div>
                     </div>
@@ -81,7 +126,7 @@ export default function Dashboard() {
                                 Agenda Webinar
                             </p>
                             <h3 className="text-xl font-bold text-gray-800">
-                                1 Webinar
+                                {stats.webinar_count} Webinar
                             </h3>
                         </div>
                     </div>
@@ -100,38 +145,40 @@ export default function Dashboard() {
                             {/* Legend */}
                             <div className="space-y-4">
                                 <div className="flex items-center gap-3">
-                                    <span className="h-4 w-4 rounded-full bg-[#FCD34D]"></span>{' '}
-                                    {/* Kuning Muda */}
+                                    <span className="h-4 w-4 rounded-full bg-[#FCD34D]"></span>
                                     <span className="text-sm font-medium text-gray-600">
-                                        Personal
+                                        Personal ({testDistribution.personal})
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <span className="h-4 w-4 rounded-full bg-[#A16207]"></span>{' '}
-                                    {/* Coklat/Emas Tua */}
+                                    <span className="h-4 w-4 rounded-full bg-[#A16207]"></span>
                                     <span className="text-sm font-medium text-gray-600">
-                                        Institution
+                                        Institution ({testDistribution.institution})
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <span className="h-4 w-4 rounded-full bg-[#FFFF00]"></span>{' '}
-                                    {/* Kuning Terang */}
+                                    <span className="h-4 w-4 rounded-full bg-[#FFFF00]"></span>
                                     <span className="text-sm font-medium text-gray-600">
-                                        Gift
+                                        Gift ({testDistribution.gift})
                                     </span>
                                 </div>
                             </div>
 
-                            {/* CSS Donut Chart (Tanpa Library Berat) */}
+                            {/* CSS Donut Chart (Dynamic based on data) */}
                             <div
                                 className="relative h-48 w-48 rounded-full"
                                 style={{
-                                    background:
-                                        'conic-gradient(#FCD34D 0% 35%, #FFFF00 35% 45%, #A16207 45% 100%)',
+                                    background: totalTests > 0
+                                        ? `conic-gradient(#FCD34D 0% ${personalPercentage}%, #FFFF00 ${personalPercentage}% ${personalPercentage + giftPercentage}%, #A16207 ${personalPercentage + giftPercentage}% 100%)`
+                                        : '#E5E7EB',
                                 }}
                             >
                                 {/* Lubang Tengah Donut */}
-                                <div className="absolute inset-0 m-auto h-24 w-24 rounded-full bg-white"></div>
+                                <div className="absolute inset-0 m-auto h-24 w-24 rounded-full bg-white flex items-center justify-center">
+                                    <span className="text-2xl font-bold text-gray-800">
+                                        {totalTests}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -143,36 +190,32 @@ export default function Dashboard() {
                                 Permohonan Persetujuan
                             </h3>
                             <div className="relative ml-2 space-y-6 border-l-2 border-gray-100 pl-6">
-                                {/* Item 1 */}
-                                <div className="relative">
-                                    <span className="absolute top-1 -left-[31px] h-3 w-3 rounded-full bg-yellow-400"></span>
-                                    <h4 className="font-bold text-gray-800">
-                                        Komisi Agen
-                                    </h4>
-                                    <p className="mt-1 text-xs text-gray-400">
-                                        Today at 10:00 AM
+                                {approvalRequests.length > 0 ? (
+                                    approvalRequests.map((request, index) => (
+                                        <div key={request.id} className="relative">
+                                            <span
+                                                className={`absolute top-1 -left-[31px] h-3 w-3 rounded-full ${index < 2 ? 'bg-yellow-400' : 'bg-gray-300'}`}
+                                            ></span>
+                                            <h4 className="font-bold text-gray-800">
+                                                {request.category}
+                                            </h4>
+                                            <p className="mt-1 text-xs text-gray-400">
+                                                {new Date(
+                                                    request.created_at,
+                                                ).toLocaleString('id-ID', {
+                                                    day: 'numeric',
+                                                    month: 'long',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit',
+                                                })}
+                                            </p>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p className="text-sm text-gray-400">
+                                        Tidak ada permohonan saat ini
                                     </p>
-                                </div>
-                                {/* Item 2 */}
-                                <div className="relative">
-                                    <span className="absolute top-1 -left-[31px] h-3 w-3 rounded-full bg-yellow-400"></span>
-                                    <h4 className="font-bold text-gray-800">
-                                        Penawaran Kerja sama
-                                    </h4>
-                                    <p className="mt-1 text-xs text-gray-400">
-                                        Today at 07:00 AM
-                                    </p>
-                                </div>
-                                {/* Item 3 */}
-                                <div className="relative">
-                                    <span className="absolute top-1 -left-[31px] h-3 w-3 rounded-full bg-gray-300"></span>
-                                    <h4 className="font-bold text-gray-800">
-                                        Undangan Seminar
-                                    </h4>
-                                    <p className="mt-1 text-xs text-gray-400">
-                                        Yesterday at 05:00 PM
-                                    </p>
-                                </div>
+                                )}
                             </div>
                         </div>
                         <button className="mt-4 flex items-center justify-end text-sm font-bold text-yellow-500 hover:underline">
@@ -193,10 +236,10 @@ export default function Dashboard() {
                                     Penjualan Token Bulan ini
                                 </p>
                                 <h3 className="mt-1 text-2xl font-extrabold text-gray-900">
-                                    Rp9.600.000,-
+                                    Rp{tokenSalesThisMonth},-
                                 </h3>
                                 <span className="mt-1 inline-flex items-center text-xs font-bold text-green-500">
-                                    <span className="mr-2 h-2 w-2 rounded-full bg-green-500"></span>{' '}
+                                    <span className="mr-2 h-2 w-2 rounded-full bg-green-500"></span>
                                     On track
                                 </span>
                             </div>
@@ -236,52 +279,32 @@ export default function Dashboard() {
                             Laporan Harian Tim
                         </h3>
                         <div className="space-y-4">
-                            {/* User 1 */}
-                            <div className="flex items-center gap-3">
-                                <img
-                                    src="https://i.pravatar.cc/150?u=1"
-                                    alt="User"
-                                    className="h-10 w-10 rounded-full object-cover"
-                                />
-                                <div>
-                                    <h5 className="text-sm font-bold text-gray-800">
-                                        Lia Kaula
-                                    </h5>
-                                    <p className="text-xs text-gray-400">
-                                        Keuangan
-                                    </p>
-                                </div>
-                            </div>
-                            {/* User 2 */}
-                            <div className="flex items-center gap-3">
-                                <img
-                                    src="https://i.pravatar.cc/150?u=2"
-                                    alt="User"
-                                    className="h-10 w-10 rounded-full object-cover"
-                                />
-                                <div>
-                                    <h5 className="text-sm font-bold text-gray-800">
-                                        Andi Kindy
-                                    </h5>
-                                    <p className="text-xs text-gray-400">
-                                        Marketing
-                                    </p>
-                                </div>
-                            </div>
-                            {/* User 3 */}
-                            <div className="flex items-center gap-3">
-                                <img
-                                    src="https://i.pravatar.cc/150?u=3"
-                                    alt="User"
-                                    className="h-10 w-10 rounded-full object-cover"
-                                />
-                                <div>
-                                    <h5 className="text-sm font-bold text-gray-800">
-                                        Bayu Subaya
-                                    </h5>
-                                    <p className="text-xs text-gray-400">SDM</p>
-                                </div>
-                            </div>
+                            {teamReports.length > 0 ? (
+                                teamReports.map((member, index) => (
+                                    <div
+                                        key={member.id}
+                                        className="flex items-center gap-3"
+                                    >
+                                        <img
+                                            src={`https://i.pravatar.cc/150?u=${member.id}`}
+                                            alt={member.name}
+                                            className="h-10 w-10 rounded-full object-cover"
+                                        />
+                                        <div>
+                                            <h5 className="text-sm font-bold text-gray-800">
+                                                {member.name}
+                                            </h5>
+                                            <p className="text-xs text-gray-400">
+                                                {member.department}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-sm text-gray-400">
+                                    Tidak ada laporan tim hari ini
+                                </p>
+                            )}
                         </div>
                         <button className="mt-2 flex items-center justify-end text-sm font-bold text-yellow-500 hover:underline">
                             View all <HiArrowSmRight className="ml-1 h-5 w-5" />

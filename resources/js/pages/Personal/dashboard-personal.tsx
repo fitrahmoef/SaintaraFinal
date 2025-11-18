@@ -1,6 +1,5 @@
-import DashboardLayout from '@/layouts/dashboard-layout-personal'; // Import Layout
-import { Head, Link } from '@inertiajs/react'; // GANTI INI
-import { useState } from 'react';
+import DashboardLayout from '@/layouts/dashboard-layout-personal';
+import { Head, Link } from '@inertiajs/react';
 import {
     HiCreditCard,
     HiDownload,
@@ -19,19 +18,18 @@ interface LatestResult {
     communication_style: string;
 }
 
-export default function Dashboard() {
-    // Mock Data State
-    const [isLoading, setIsLoading] = useState(false);
-    const [latestResult, setLatestResult] = useState<LatestResult | null>({
-        id: 1,
-        character_type_name: 'Sang Analis',
-        character_type_code: 'SA',
-        description:
-            'Ini adalah deskripsi palsu dari mock data untuk kebutuhan development.',
-        strengths: ['Logis', 'Detail', 'Terstruktur'],
-        challenges: ['Terlalu kaku', 'Sulit bersosialisasi'],
-        communication_style: 'To the point',
-    });
+interface TokenBalance {
+    total: number;
+    used: number;
+    available: number;
+}
+
+interface DashboardProps {
+    latestResult: LatestResult | null;
+    tokenBalance: TokenBalance;
+}
+
+export default function Dashboard({ latestResult, tokenBalance }: DashboardProps) {
 
     return (
         <DashboardLayout>
@@ -41,11 +39,7 @@ export default function Dashboard() {
                 {/* Left Column */}
                 <div className="space-y-8 lg:col-span-2">
                     {/* Character Profile Card */}
-                    {isLoading ? (
-                        <div className="animate-pulse rounded-lg bg-white p-6 shadow-md">
-                            Loading...
-                        </div>
-                    ) : latestResult ? (
+                    {latestResult ? (
                         <div className="flex flex-col items-center rounded-lg bg-white p-6 shadow-md md:flex-row">
                             <div className="mb-4 flex-shrink-0 text-center md:mr-6 md:mb-0 md:text-left">
                                 <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-saintara-yellow to-yellow-200">
@@ -74,7 +68,13 @@ export default function Dashboard() {
                         </div>
                     ) : (
                         <div className="rounded-lg bg-white p-6 text-center shadow-md">
-                            <p>Belum ada hasil tes.</p>
+                            <p className="text-gray-500">Belum ada hasil tes.</p>
+                            <Link
+                                href="/personal/daftarTes"
+                                className="mt-4 inline-block rounded-lg bg-saintara-yellow px-6 py-2 text-sm font-semibold text-white hover:bg-yellow-500"
+                            >
+                                Mulai Tes Sekarang
+                            </Link>
                         </div>
                     )}
 
@@ -123,23 +123,67 @@ export default function Dashboard() {
 
                 {/* Right Column */}
                 <div className="space-y-8 lg:col-span-1">
-                    {/* Download */}
-                    <div className="rounded-lg bg-white p-6 text-center shadow-md">
-                        <button className="flex w-full items-center justify-center rounded-lg bg-saintara-black px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-800">
-                            <HiDownload className="mr-2 h-5 w-5" /> Unduh Hasil
-                            Tes
-                        </button>
+                    {/* Token Balance Card */}
+                    <div className="rounded-lg bg-gradient-to-br from-saintara-yellow to-yellow-400 p-6 shadow-lg">
+                        <h4 className="mb-4 text-sm font-semibold text-white">
+                            Saldo Token Anda
+                        </h4>
+                        <div className="mb-4">
+                            <div className="mb-1 flex items-baseline">
+                                <span className="text-4xl font-bold text-white">
+                                    {tokenBalance.available}
+                                </span>
+                                <span className="ml-2 text-sm text-yellow-100">
+                                    / {tokenBalance.total} Token
+                                </span>
+                            </div>
+                            <p className="text-xs text-yellow-100">
+                                {tokenBalance.used} token telah digunakan
+                            </p>
+                        </div>
+                        <div className="h-2 overflow-hidden rounded-full bg-yellow-200">
+                            <div
+                                className="h-full rounded-full bg-white transition-all"
+                                style={{
+                                    width: `${tokenBalance.total > 0 ? (tokenBalance.available / tokenBalance.total) * 100 : 0}%`,
+                                }}
+                            ></div>
+                        </div>
                     </div>
+
+                    {/* Download */}
+                    {latestResult && (
+                        <div className="rounded-lg bg-white p-6 text-center shadow-md">
+                            <button className="flex w-full items-center justify-center rounded-lg bg-saintara-black px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-800">
+                                <HiDownload className="mr-2 h-5 w-5" /> Unduh Hasil
+                                Tes
+                            </button>
+                        </div>
+                    )}
 
                     {/* Strengths */}
                     {latestResult && (
                         <div className="rounded-lg bg-white p-6 shadow-md">
                             <h4 className="mb-2 font-semibold text-gray-800">
-                                Kekuatan
+                                Kekuatan Anda
                             </h4>
                             <ul className="list-inside list-disc text-sm text-gray-600">
                                 {latestResult.strengths.map((s, i) => (
                                     <li key={i}>{s}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
+                    {/* Challenges */}
+                    {latestResult && latestResult.challenges && latestResult.challenges.length > 0 && (
+                        <div className="rounded-lg bg-white p-6 shadow-md">
+                            <h4 className="mb-2 font-semibold text-gray-800">
+                                Tantangan
+                            </h4>
+                            <ul className="list-inside list-disc text-sm text-gray-600">
+                                {latestResult.challenges.map((c, i) => (
+                                    <li key={i}>{c}</li>
                                 ))}
                             </ul>
                         </div>

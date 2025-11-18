@@ -30,6 +30,15 @@ class PaymentController extends Controller
         try {
             Log::info('Payment notification received', $request->all());
 
+            // SECURITY: Verify webhook signature before processing
+            if (!$this->verifyWebhookSignature($request)) {
+                Log::warning('Invalid webhook signature', $request->all());
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid signature',
+                ], 401);
+            }
+
             // Handle notification dari Midtrans
             $notification = $this->midtransService->handleNotification();
 

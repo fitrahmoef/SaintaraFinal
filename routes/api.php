@@ -37,6 +37,13 @@ Route::middleware(['auth', 'user.type:personal'])->prefix('personal')->name('per
     Route::get('/tests/{id}', [TestController::class, 'show'])->name('tests.show');
     Route::post('/tests/submit', [TestController::class, 'submit'])->name('tests.submit');
 
+    // Test Session Management
+    Route::post('/tests/session/start', [TestController::class, 'startSession'])->name('tests.session.start');
+    Route::post('/tests/session/save-progress', [TestController::class, 'saveProgress'])->name('tests.session.save-progress');
+    Route::post('/tests/session/submit', [TestController::class, 'submitSession'])->name('tests.session.submit');
+    Route::post('/tests/session/abandon', [TestController::class, 'abandonSession'])->name('tests.session.abandon');
+    Route::get('/tests/session/status', [TestController::class, 'getSession'])->name('tests.session.status');
+
     // Test Results
     Route::get('/results', [TestController::class, 'results'])->name('results.index');
     Route::get('/results/{id}', [TestController::class, 'resultDetail'])->name('results.show');

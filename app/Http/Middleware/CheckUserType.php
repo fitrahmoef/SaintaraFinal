@@ -22,9 +22,24 @@ class CheckUserType
             return redirect()->route('login');
         }
 
+        // Check if user_type is null or empty - redirect to login if so
+        if (empty($user->user_type)) {
+            auth()->logout();
+            return redirect()->route('login')->with('error', 'User type not set. Please contact administrator.');
+        }
+
         if ($user->user_type !== $type) {
             // Redirect to appropriate dashboard based on user's actual type
-            return redirect()->route($user->user_type . '.dashboard');
+            $dashboardRoute = $user->user_type . '.dashboard';
+
+            // Verify the route exists before redirecting
+            if (\Illuminate\Support\Facades\Route::has($dashboardRoute)) {
+                return redirect()->route($dashboardRoute);
+            }
+
+            // If route doesn't exist, logout and redirect to login
+            auth()->logout();
+            return redirect()->route('login')->with('error', 'Invalid user type. Please contact administrator.');
         }
 
         return $next($request);

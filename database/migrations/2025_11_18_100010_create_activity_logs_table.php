@@ -35,7 +35,7 @@ return new class extends Migration
             $table->timestamp('created_at')->useCurrent(); // Hanya created_at, tidak perlu updated
 
             // Indexes untuk query cepat
-            $table->index(['user_type', 'user_id']);
+            // Note: nullableMorphs already creates index on [user_type, user_id]
             $table->index('action');
             $table->index('module');
             $table->index('log_level');

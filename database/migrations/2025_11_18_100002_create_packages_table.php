@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -26,11 +27,11 @@ return new class extends Migration
             // Indexes
             $table->index('tipe_paket');
             $table->index('is_active');
-
-            // Constraints
-            $table->check('harga >= 0', 'chk_packages_harga_positive');
-            $table->check('jumlah_token > 0', 'chk_packages_token_positive');
         });
+
+        // Add check constraints using raw SQL
+        DB::statement('ALTER TABLE packages ADD CONSTRAINT chk_packages_harga_positive CHECK (harga >= 0)');
+        DB::statement('ALTER TABLE packages ADD CONSTRAINT chk_packages_token_positive CHECK (jumlah_token > 0)');
     }
 
     /**

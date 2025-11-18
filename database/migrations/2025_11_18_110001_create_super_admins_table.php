@@ -11,21 +11,20 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('admins', function (Blueprint $table) {
+        Schema::create('super_admins', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->enum('tipe_admin', ['superadmin', 'admin_instansi'])->default('admin_instansi');
-            $table->string('nama_admin');
-            $table->string('nama_instansi')->nullable(); // Hanya untuk admin_instansi
+            $table->string('nama_super_admin');
             $table->string('nomor_telepon', 20)->nullable();
             $table->enum('status_akun', ['aktif', 'tidak_aktif'])->default('aktif');
+            $table->text('catatan')->nullable(); // Untuk catatan tambahan
             $table->timestamps();
             $table->softDeletes();
 
             // Indexes
-            $table->index('user_id');
-            $table->index('tipe_admin');
+            $table->unique('user_id'); // Satu user hanya bisa jadi satu super admin
             $table->index('status_akun');
+            $table->index('nama_super_admin');
         });
     }
 
@@ -34,6 +33,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('admins');
+        Schema::dropIfExists('super_admins');
     }
 };

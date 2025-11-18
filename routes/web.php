@@ -1,11 +1,13 @@
 <?php
 
-
-use Inertia\Inertia;
-use Laravel\Fortify\Features;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Instansi\InstansiDashboardController;
+use App\Http\Controllers\Personal\PersonalDashboardController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
+use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
+use Laravel\Fortify\Features;
 
 Route::get('/', function () {
     return inertia('landing');
@@ -24,19 +26,32 @@ Route::get('/calendar', function () {
     return Inertia::render('Calendar'); // Nama 'Calendar' harus sama persis dengan nama file Calendar.tsx
 });
 
-// Dashboard default setelah login
+// Dashboard default setelah login - Redirect based on user type
 Route::get('/dashboard', function () {
-    return Inertia::render('dashboard');
+    $user = auth()->user();
+
+    if (!$user) {
+        return redirect()->route('login');
+    }
+
+    // Redirect based on user_type
+    switch ($user->user_type) {
+        case 'admin':
+            return redirect()->route('admin.dashboard');
+        case 'instansi':
+            return redirect()->route('instansi.dashboard');
+        case 'personal':
+        default:
+            return redirect()->route('personal.dashboard');
+    }
 })->middleware('auth')->name('dashboard');
 
 // Group untuk Personal User
-Route::prefix('personal')->middleware('auth')->group(function () {
+Route::prefix('personal')->middleware(['auth', 'user.type:personal'])->group(function () {
 
     // Dashboard Personal
-    Route::get('/dashboardPersonal', function () {
-        // Pastikan file ada di: resources/js/Pages/Personal/Dashboard.tsx
-        return Inertia::render('Personal/dashboard-personal');
-    })->name('personal.dashboard');
+    Route::get('/dashboardPersonal', [PersonalDashboardController::class, 'index'])
+        ->name('personal.dashboard');
 
     // Profil Personal
     Route::get('/profilePersonal', function () {
@@ -89,13 +104,11 @@ Route::prefix('personal')->middleware('auth')->group(function () {
 });
 
 // admin routes
-Route::prefix('admin')->middleware('auth')->group(function () {
+Route::prefix('admin')->middleware(['auth', 'user.type:admin'])->group(function () {
 
     // Dashboard admin
-    Route::get('/dashboardAdmin', function () {
-        // Pastikan file ada di: resources/js/Pages/Personal/Dashboard.tsx
-        return Inertia::render('Admin/dashboard-admin');
-    })->name('admin.dashboard');
+    Route::get('/dashboardAdmin', [AdminDashboardController::class, 'index'])
+        ->name('admin.dashboard');
 
     // Profil Personal
     Route::get('/profileAdmin', function () {
@@ -136,11 +149,14 @@ Route::prefix('admin')->middleware('auth')->group(function () {
 });
 
 // instansi routes
-Route::prefix('instansi')->middleware('auth')->group(function () {
+Route::prefix('instansi')->middleware(['auth', 'user.type:instansi'])->group(function () {
+
+    // Dashboard Instansi
+    Route::get('/dashboardInstansi', [InstansiDashboardController::class, 'index'])
+        ->name('instansi.dashboard');
 
     // form tes instansi
     Route::get('/formTesInstansi', function () {
-        // Pastikan file ada di: resources/js/Pages/Personal/Dashboard.tsx
         return Inertia::render('Instansi/form-tes-instansi');
     })->name('instansi.form-tes-instansi');
 });

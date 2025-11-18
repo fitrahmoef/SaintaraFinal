@@ -24,6 +24,11 @@ Route::get('/calendar', function () {
     return Inertia::render('Calendar'); // Nama 'Calendar' harus sama persis dengan nama file Calendar.tsx
 });
 
+// Dashboard default setelah login
+Route::get('/dashboard', function () {
+    return Inertia::render('dashboard');
+})->middleware('auth')->name('dashboard');
+
 // Group untuk Personal User
 Route::prefix('personal')->middleware('auth')->group(function () {
 

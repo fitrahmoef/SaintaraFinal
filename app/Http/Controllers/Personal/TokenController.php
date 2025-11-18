@@ -7,11 +7,20 @@ use App\Models\Package;
 use App\Models\TokenPurchase;
 use App\Models\Transaction;
 use App\Models\Customer;
+use App\Services\MidtransService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class TokenController extends Controller
 {
+    protected $midtransService;
+
+    public function __construct(MidtransService $midtransService)
+    {
+        $this->midtransService = $midtransService;
+    }
+
     public function index()
     {
         $customer = auth()->user()->customer;
@@ -105,56 +114,86 @@ class TokenController extends Controller
 
         DB::beginTransaction();
         try {
-            // Create transaction
+            // Generate unique transaction code
+            $kodeTransaksi = Transaction::generateKodeTransaksi();
+
+            // Create transaction with pending status
             $transaction = Transaction::create([
                 'customer_id' => $customer->id,
                 'package_id' => $package->id,
                 'payment_gateway_id' => $request->payment_gateway_id,
-                'kode_transaksi' => Transaction::generateKodeTransaksi(),
+                'kode_transaksi' => $kodeTransaksi,
                 'jumlah_bayar' => $package->harga,
                 'status_pembayaran' => 'pending',
-                'metode_pembayaran' => $request->metode_pembayaran ?? 'Transfer Bank',
+                'metode_pembayaran' => null, // Will be set by payment gateway
                 'waktu_dibuat' => now(),
                 'waktu_kadaluarsa' => now()->addHours(24),
             ]);
 
-            // Create token purchase
-            $tokenPurchase = TokenPurchase::create([
-                'customer_id' => $customer->id,
-                'transaction_id' => $transaction->id,
-                'package_id' => $package->id,
-                'kode_token' => TokenPurchase::generateKodeToken(),
-                'jumlah_token' => $package->jumlah_token,
-                'jumlah_terpakai' => 0,
-                'status' => 'aktif',
-                'tanggal_pembelian' => now(),
-                'tanggal_kadaluarsa' => now()->addDays($package->masa_aktif_hari),
-            ]);
+            // Prepare order details for Midtrans
+            $orderDetails = [
+                'order_id' => $kodeTransaksi,
+                'gross_amount' => (int) $package->harga,
+                'customer' => [
+                    'first_name' => $customer->nama_lengkap,
+                    'last_name' => '',
+                    'email' => $user->email,
+                    'phone' => $customer->nomor_telepon ?? '',
+                ],
+                'items' => [
+                    [
+                        'id' => $package->id,
+                        'price' => (int) $package->harga,
+                        'quantity' => 1,
+                        'name' => $package->nama_paket,
+                    ],
+                ],
+            ];
 
-            // Update transaction status to paid (for demo - in real app this would be done by payment gateway callback)
+            // Create Midtrans Snap Token
+            $snapResult = $this->midtransService->createSnapToken($orderDetails);
+
+            // Update transaction with payment URL
             $transaction->update([
-                'status_pembayaran' => 'dibayar',
-                'waktu_dibayar' => now(),
+                'payment_url' => $snapResult['redirect_url'],
+                'payment_metadata' => [
+                    'snap_token' => $snapResult['snap_token'],
+                ],
             ]);
 
             DB::commit();
 
+            Log::info('Token purchase initiated', [
+                'customer_id' => $customer->id,
+                'transaction_id' => $transaction->id,
+                'kode_transaksi' => $kodeTransaksi,
+                'amount' => $package->harga,
+            ]);
+
             return response()->json([
                 'success' => true,
-                'message' => 'Token berhasil dibeli',
+                'message' => 'Transaksi berhasil dibuat. Silakan lanjutkan pembayaran.',
                 'transaction' => [
+                    'id' => $transaction->id,
                     'kode' => $transaction->kode_transaksi,
                     'status' => $transaction->status_pembayaran,
+                    'amount' => $transaction->jumlah_bayar,
                 ],
-                'token' => [
-                    'kode' => $tokenPurchase->kode_token,
-                    'jumlah' => $tokenPurchase->jumlah_token,
-                    'kadaluarsa' => $tokenPurchase->tanggal_kadaluarsa->format('d M Y'),
+                'payment' => [
+                    'snap_token' => $snapResult['snap_token'],
+                    'redirect_url' => $snapResult['redirect_url'],
                 ],
             ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
+
+            Log::error('Token purchase failed', [
+                'error' => $e->getMessage(),
+                'customer_id' => $customer->id ?? null,
+                'package_id' => $request->package_id,
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal melakukan pembelian: ' . $e->getMessage()

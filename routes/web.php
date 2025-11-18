@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Instansi\InstansiDashboardController;
 use App\Http\Controllers\Personal\PersonalDashboardController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PaymentController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -100,6 +101,10 @@ Route::prefix('personal')->middleware(['auth', 'user.type:personal'])->group(fun
         // Pastikan file ada di: resources/js/Pages/Personal/Profile.tsx
         return Inertia::render('Personal/form-tes-personal');
     })->name('personal.form-tes');
+
+    // Payment Success/Error Pages
+    Route::get('/payment/success', [PaymentController::class, 'paymentSuccess'])->name('personal.payment.success');
+    Route::get('/payment/error', [PaymentController::class, 'paymentError'])->name('personal.payment.error');
 
 });
 

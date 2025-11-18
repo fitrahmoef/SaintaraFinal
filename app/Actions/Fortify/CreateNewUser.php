@@ -32,6 +32,7 @@ class CreateNewUser implements CreatesNewUsers
             'negara' => ['nullable', 'string', 'max:255'],
             'kota' => ['nullable', 'string', 'max:255'],
             'password' => $this->passwordRules(),
+            'user_type' => ['nullable', 'in:personal,admin,instansi'],
         ])->validate();
 
         return User::create([
@@ -42,6 +43,7 @@ class CreateNewUser implements CreatesNewUsers
             'negara' => $input['negara'] ?? null,
             'kota' => $input['kota'] ?? null,
             'password' => $input['password'],
+            'user_type' => $input['user_type'] ?? 'personal',
         ]);
     }
 }

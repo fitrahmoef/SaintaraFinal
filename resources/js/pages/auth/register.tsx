@@ -8,6 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import AuthLayout from '@/layouts/auth-layout';
 
 export default function Register() {
@@ -73,6 +80,21 @@ export default function Register() {
                                     placeholder="email@example.com"
                                 />
                                 <InputError message={errors.email} />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="user_type">Tipe Akun</Label>
+                                <Select name="user_type" defaultValue="personal">
+                                    <SelectTrigger id="user_type">
+                                        <SelectValue placeholder="Pilih tipe akun" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="personal">Personal</SelectItem>
+                                        <SelectItem value="instansi">Instansi</SelectItem>
+                                        <SelectItem value="admin">Admin</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <InputError message={errors.user_type} />
                             </div>
 
                                       <div className="grid gap-2">

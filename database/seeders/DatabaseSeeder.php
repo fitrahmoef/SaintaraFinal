@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             PaymentGatewaySeeder::class,
             CharacterTypeSeeder::class,
             TestSeeder::class,
+            TestQuestionSeeder::class,
         ]);
 
         // Create default test user

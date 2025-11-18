@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Personal\TokenController;
 use App\Http\Controllers\Personal\TestController;
+use App\Http\Controllers\Personal\CertificateController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 
@@ -38,6 +39,11 @@ Route::middleware(['auth', 'user.type:personal'])->prefix('personal')->name('per
     // Test Results
     Route::get('/results', [TestController::class, 'results'])->name('results.index');
     Route::get('/results/{id}', [TestController::class, 'resultDetail'])->name('results.show');
+
+    // Certificates
+    Route::get('/certificates/{id}/download', [CertificateController::class, 'download'])->name('certificates.download');
+    Route::get('/certificates/{id}/view', [CertificateController::class, 'view'])->name('certificates.view');
+    Route::get('/results/{id}/download', [CertificateController::class, 'downloadTestResult'])->name('results.download');
 });
 
 // Admin Routes (Protected)
@@ -64,4 +70,7 @@ Route::middleware(['auth', 'user.type:instansi'])->prefix('instansi')->name('ins
 Route::prefix('public')->name('public.')->group(function () {
     // Public test packages (for display on landing page)
     Route::get('/packages', [TokenController::class, 'packages'])->name('packages');
+
+    // Certificate verification (public)
+    Route::get('/certificates/verify/{nomor_sertifikat}', [CertificateController::class, 'verify'])->name('certificates.verify');
 });

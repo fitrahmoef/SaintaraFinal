@@ -7,6 +7,7 @@ use App\Http\Controllers\Personal\TestController;
 use App\Http\Controllers\Personal\CertificateController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\PaymentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -64,6 +65,21 @@ Route::middleware(['auth', 'user.type:admin'])->prefix('admin')->name('admin.')-
 Route::middleware(['auth', 'user.type:instansi'])->prefix('instansi')->name('instansi.')->group(function () {
     // Test submission for institutions
     Route::post('/tests/submit-batch', [TestController::class, 'submitBatch'])->name('tests.submit-batch');
+});
+
+// Payment Routes (Public - for Midtrans callback)
+Route::prefix('payment')->name('payment.')->group(function () {
+    // Midtrans notification callback (MUST BE PUBLIC)
+    Route::post('/notification', [PaymentController::class, 'handleNotification'])->name('notification');
+});
+
+// Payment Routes (Protected)
+Route::middleware(['auth'])->prefix('payment')->name('payment.')->group(function () {
+    // Get transaction status
+    Route::get('/status', [PaymentController::class, 'getTransactionStatus'])->name('status');
+
+    // Cancel transaction
+    Route::post('/cancel', [PaymentController::class, 'cancelTransaction'])->name('cancel');
 });
 
 // Public Routes

@@ -1,18 +1,25 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage, router } from '@inertiajs/react';
 import React from 'react';
-import { 
+import {
     HiBell, HiHome, HiLogout, HiUser, HiGift, HiCog, HiShoppingCart, HiCheckCircle,
-    HiClipboard, HiChat 
+    HiClipboard, HiChat
  } from 'react-icons/hi';
+import { SharedData } from '@/types';
+import { logout as logoutRoute } from '@/routes';
 
 export default function DashboardLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
-    // Data Mock User (Sementara)
-    const user = { name: 'Budi' };
-    const logout = () => console.log('Logout logic placeholder');
+    // Ambil data user yang sebenarnya dari auth
+    const { auth } = usePage<SharedData>().props;
+    const user = auth.user;
+
+    // Fungsi logout yang sebenarnya
+    const handleLogout = () => {
+        router.flushAll();
+    };
 
     return (
         <div className="flex min-h-screen bg-gray-50 font-poppins">
@@ -80,12 +87,14 @@ export default function DashboardLayout({
                 </div>
 
                 <div className="border-t border-gray-700 px-4 py-4 flex-shrink-0">
-                    <button
-                        onClick={logout}
+                    <Link
+                        href={logoutRoute()}
+                        as="button"
+                        onClick={handleLogout}
                         className="flex w-full items-center rounded-lg px-4 py-2.5 text-gray-300 hover:bg-gray-700 hover:text-white"
                     >
                         <HiLogout className="mr-3 h-6 w-6" /> Logout
-                    </button>
+                    </Link>
                 </div>
             </aside>
 

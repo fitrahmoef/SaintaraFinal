@@ -25,7 +25,7 @@ Route::get('/calendar', function () {
 });
 
 // Group untuk Personal User
-Route::prefix('personal')->group(function () {
+Route::prefix('personal')->middleware('auth')->group(function () {
 
     // Dashboard Personal
     Route::get('/dashboardPersonal', function () {
@@ -84,7 +84,7 @@ Route::prefix('personal')->group(function () {
 });
 
 // admin routes
-Route::prefix('admin')->group(function () {
+Route::prefix('admin')->middleware('auth')->group(function () {
 
     // Dashboard admin
     Route::get('/dashboardAdmin', function () {
@@ -131,7 +131,7 @@ Route::prefix('admin')->group(function () {
 });
 
 // instansi routes
-Route::prefix('instansi')->group(function () {
+Route::prefix('instansi')->middleware('auth')->group(function () {
 
     // form tes instansi
     Route::get('/formTesInstansi', function () {

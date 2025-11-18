@@ -20,6 +20,7 @@ class CreateNewUser implements CreatesNewUsers
     {
         Validator::make($input, [
             'name' => ['required', 'string', 'max:255'],
+            'namapanggilan' => ['nullable', 'string', 'max:255'],
             'email' => [
                 'required',
                 'string',
@@ -27,12 +28,19 @@ class CreateNewUser implements CreatesNewUsers
                 'max:255',
                 Rule::unique(User::class),
             ],
+            'notelp' => ['nullable', 'string', 'max:20'],
+            'negara' => ['nullable', 'string', 'max:255'],
+            'kota' => ['nullable', 'string', 'max:255'],
             'password' => $this->passwordRules(),
         ])->validate();
 
         return User::create([
             'name' => $input['name'],
+            'namapanggilan' => $input['namapanggilan'] ?? null,
             'email' => $input['email'],
+            'notelp' => $input['notelp'] ?? null,
+            'negara' => $input['negara'] ?? null,
+            'kota' => $input['kota'] ?? null,
             'password' => $input['password'],
         ]);
     }

@@ -8,6 +8,7 @@ use App\Models\TokenPurchase;
 use App\Models\Transaction;
 use App\Models\Customer;
 use App\Services\MidtransService;
+use App\Services\FreeTokenService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -15,10 +16,12 @@ use Illuminate\Support\Facades\Log;
 class TokenController extends Controller
 {
     protected $midtransService;
+    protected FreeTokenService $freeTokenService;
 
-    public function __construct(MidtransService $midtransService)
+    public function __construct(MidtransService $midtransService, FreeTokenService $freeTokenService)
     {
         $this->midtransService = $midtransService;
+        $this->freeTokenService = $freeTokenService;
     }
 
     public function index()
@@ -28,19 +31,14 @@ class TokenController extends Controller
         if (!$customer) {
             return response()->json([
                 'tokenBalance' => 0,
+                'freeTokens' => 0,
                 'transactions' => [],
                 'message' => 'Customer profile not found'
             ]);
         }
 
-        $tokenPurchases = TokenPurchase::where('customer_id', $customer->id)
-            ->with(['package', 'transaction'])
-            ->active()
-            ->get();
-
-        $totalTokens = $tokenPurchases->sum('jumlah_token');
-        $usedTokens = $tokenPurchases->sum('jumlah_terpakai');
-        $remainingTokens = $totalTokens - $usedTokens;
+        // Get token balance including free tokens
+        $tokenBalance = $this->freeTokenService->getTotalTokenBalance($customer);
 
         $transactions = Transaction::where('customer_id', $customer->id)
             ->with('package')
@@ -60,9 +58,11 @@ class TokenController extends Controller
             });
 
         return response()->json([
-            'tokenBalance' => $remainingTokens,
-            'totalTokens' => $totalTokens,
-            'usedTokens' => $usedTokens,
+            'tokenBalance' => $tokenBalance['total_available'],
+            'freeTokens' => $tokenBalance['free_tokens'],
+            'totalTokens' => $tokenBalance['purchased_total'],
+            'usedTokens' => $tokenBalance['purchased_used'],
+            'purchasedAvailable' => $tokenBalance['purchased_available'],
             'transactions' => $transactions,
         ]);
     }
@@ -209,21 +209,23 @@ class TokenController extends Controller
         $customer = auth()->user()->customer;
 
         if (!$customer) {
-            return response()->json(['balance' => 0]);
+            return response()->json([
+                'balance' => 0,
+                'free_tokens' => 0,
+                'total' => 0,
+                'used' => 0,
+            ]);
         }
 
-        $tokenPurchases = TokenPurchase::where('customer_id', $customer->id)
-            ->active()
-            ->get();
-
-        $totalTokens = $tokenPurchases->sum('jumlah_token');
-        $usedTokens = $tokenPurchases->sum('jumlah_terpakai');
-        $balance = $totalTokens - $usedTokens;
+        // Get token balance including free tokens
+        $tokenBalance = $this->freeTokenService->getTotalTokenBalance($customer);
 
         return response()->json([
-            'balance' => $balance,
-            'total' => $totalTokens,
-            'used' => $usedTokens,
+            'balance' => $tokenBalance['total_available'],
+            'free_tokens' => $tokenBalance['free_tokens'],
+            'purchased_available' => $tokenBalance['purchased_available'],
+            'total' => $tokenBalance['purchased_total'],
+            'used' => $tokenBalance['purchased_used'],
         ]);
     }
 }

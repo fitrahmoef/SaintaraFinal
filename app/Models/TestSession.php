@@ -24,10 +24,12 @@ class TestSession extends Model
         'token_locked',
         'ip_address',
         'user_agent',
+        'metadata',
     ];
 
     protected $casts = [
         'jawaban' => 'array',
+        'metadata' => 'array',
         'waktu_mulai' => 'datetime',
         'waktu_selesai' => 'datetime',
         'waktu_expired' => 'datetime',

@@ -11,16 +11,19 @@ use App\Models\TokenUsage;
 use App\Models\Certificate;
 use App\Models\Customer;
 use App\Services\CharacterAnalysisService;
+use App\Services\FreeTokenService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class TestController extends Controller
 {
     protected CharacterAnalysisService $characterAnalysis;
+    protected FreeTokenService $freeTokenService;
 
-    public function __construct(CharacterAnalysisService $characterAnalysis)
+    public function __construct(CharacterAnalysisService $characterAnalysis, FreeTokenService $freeTokenService)
     {
         $this->characterAnalysis = $characterAnalysis;
+        $this->freeTokenService = $freeTokenService;
     }
 
     public function index()
@@ -317,19 +320,28 @@ class TestController extends Controller
                 ]);
             }
 
-            // Check if user has enough tokens WITH LOCK to prevent race condition
-            $availableToken = TokenPurchase::where('customer_id', $customer->id)
-                ->active()
-                ->where('jumlah_tersisa', '>=', $test->token_required)
-                ->lockForUpdate() // CRITICAL: Prevent race condition
-                ->first();
+            // PRIORITY 1: Check if user has free tokens
+            $usingFreeToken = false;
+            $availableToken = null;
 
-            if (!$availableToken) {
-                DB::rollBack();
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Token tidak mencukupi'
-                ], 400);
+            if ($this->freeTokenService->hasFreeTokens($customer) &&
+                $this->freeTokenService->getFreeTokenCount($customer) >= $test->token_required) {
+                $usingFreeToken = true;
+            } else {
+                // PRIORITY 2: Check purchased tokens WITH LOCK to prevent race condition
+                $availableToken = TokenPurchase::where('customer_id', $customer->id)
+                    ->active()
+                    ->where('jumlah_tersisa', '>=', $test->token_required)
+                    ->lockForUpdate() // CRITICAL: Prevent race condition
+                    ->first();
+
+                if (!$availableToken) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Token tidak mencukupi'
+                    ], 400);
+                }
             }
 
             // Create new test session
@@ -340,7 +352,7 @@ class TestController extends Controller
             $session = TestSession::create([
                 'customer_id' => $customer->id,
                 'test_id' => $test->id,
-                'token_purchase_id' => $availableToken->id,
+                'token_purchase_id' => $availableToken?->id, // Null if using free token
                 'session_token' => $sessionToken,
                 'status' => 'in_progress',
                 'jawaban' => [],
@@ -350,6 +362,7 @@ class TestController extends Controller
                 'token_locked' => true,
                 'ip_address' => $request->ip(),
                 'user_agent' => $request->userAgent(),
+                'metadata' => ['using_free_token' => $usingFreeToken], // Track if using free token
             ]);
 
             DB::commit();
@@ -488,9 +501,16 @@ class TestController extends Controller
                 'ip_address' => $request->ip(),
             ]);
 
-            // SECURITY FIX: Lock token purchase to prevent race condition
-            // Reload with lockForUpdate to ensure atomic increment
-            if ($session->token_purchase_id) {
+            // Deduct tokens based on session type
+            $sessionMetadata = $session->metadata ?? [];
+            $usingFreeToken = $sessionMetadata['using_free_token'] ?? false;
+
+            if ($usingFreeToken) {
+                // Use free tokens
+                $this->freeTokenService->useFreeTokens($customer, $session->test->token_required);
+            } else if ($session->token_purchase_id) {
+                // SECURITY FIX: Lock token purchase to prevent race condition
+                // Reload with lockForUpdate to ensure atomic increment
                 $tokenPurchase = TokenPurchase::where('id', $session->token_purchase_id)
                     ->lockForUpdate()
                     ->first();

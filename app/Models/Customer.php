@@ -21,10 +21,16 @@ class Customer extends Model
         'golongan_darah',
         'negara',
         'kota',
+        'free_tokens_granted',
+        'free_token_count',
+        'free_tokens_granted_at',
     ];
 
     protected $casts = [
         'tanggal_lahir' => 'date',
+        'free_tokens_granted' => 'boolean',
+        'free_token_count' => 'integer',
+        'free_tokens_granted_at' => 'datetime',
     ];
 
     public function user(): BelongsTo

@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\Role;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -12,7 +13,7 @@ class CheckUserType
      * Handle an incoming request.
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-     * @param  string  $type  The required user type (personal, admin, instansi)
+     * @param  string  $type  The required user type (personal, admin, instansi, superadmin, gift)
      */
     public function handle(Request $request, Closure $next, string $type): Response
     {
@@ -26,6 +27,17 @@ class CheckUserType
         if (empty($user->user_type)) {
             auth()->logout();
             return redirect()->route('login')->with('error', 'User type not set. Please contact administrator.');
+        }
+
+        // Validate that user_type is one of the allowed values
+        if (!in_array($user->user_type, ['personal', 'admin', 'instansi', 'gift', 'superadmin'])) {
+            auth()->logout();
+            return redirect()->route('login')->with('error', 'Invalid user type. Please contact administrator.');
+        }
+
+        // Superadmin can access all dashboards
+        if ($user->isSuperAdmin()) {
+            return $next($request);
         }
 
         if ($user->user_type !== $type) {

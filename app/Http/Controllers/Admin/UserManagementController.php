@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\Permission;
+use App\Enums\Role;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Customer;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 
@@ -13,17 +16,16 @@ class UserManagementController extends Controller
 {
     public function index(Request $request)
     {
-        $type = $request->get('type', 'personal'); // personal, instansi, gift
+        // Check permission
+        Gate::authorize(Permission::VIEW_USERS->value);
+
+        $type = $request->get('type', 'personal'); // personal, instansi, gift, admin, superadmin
 
         $query = User::with('customer');
 
         // Filter by user type
-        if ($type === 'personal') {
-            $query->where('user_type', 'personal');
-        } elseif ($type === 'instansi') {
-            $query->where('user_type', 'instansi');
-        } elseif ($type === 'gift') {
-            $query->where('user_type', 'gift');
+        if (in_array($type, ['personal', 'instansi', 'gift', 'admin', 'superadmin'])) {
+            $query->where('user_type', $type);
         }
 
         // Search
@@ -43,6 +45,7 @@ class UserManagementController extends Controller
                     'name' => $user->name,
                     'email' => $user->email,
                     'user_type' => $user->user_type,
+                    'role_label' => $user->getRole()?->label(),
                     'notelp' => $user->notelp,
                     'negara' => $user->negara,
                     'kota' => $user->kota,
@@ -60,11 +63,14 @@ class UserManagementController extends Controller
 
     public function store(Request $request)
     {
+        // Check permission
+        Gate::authorize(Permission::CREATE_USERS->value);
+
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8',
-            'user_type' => 'required|in:personal,admin,instansi,gift',
+            'user_type' => 'required|in:personal,admin,instansi,gift,superadmin',
             'notelp' => 'nullable|string|max:20',
             'negara' => 'nullable|string|max:100',
             'kota' => 'nullable|string|max:100',
@@ -74,6 +80,14 @@ class UserManagementController extends Controller
             'jenis_kelamin' => 'nullable|in:pria,wanita',
             'golongan_darah' => 'nullable|string|max:3',
         ]);
+
+        // SECURITY: Only superadmin can create other superadmins
+        if ($request->user_type === 'superadmin' && !auth()->user()->isSuperAdmin()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only superadmin can create superadmin users',
+            ], 403);
+        }
 
         DB::beginTransaction();
         try {
@@ -129,6 +143,9 @@ class UserManagementController extends Controller
 
     public function show($id)
     {
+        // Check permission
+        Gate::authorize(Permission::VIEW_USERS->value);
+
         $user = User::with('customer')->findOrFail($id);
 
         return response()->json([
@@ -137,6 +154,7 @@ class UserManagementController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'user_type' => $user->user_type,
+                'role_label' => $user->getRole()?->label(),
                 'notelp' => $user->notelp,
                 'negara' => $user->negara,
                 'kota' => $user->kota,
@@ -155,17 +173,36 @@ class UserManagementController extends Controller
 
     public function update(Request $request, $id)
     {
+        // Check permission
+        Gate::authorize(Permission::UPDATE_USERS->value);
+
         $user = User::findOrFail($id);
+
+        // SECURITY: Prevent modifying superadmin unless you are superadmin
+        if ($user->isSuperAdmin() && !auth()->user()->isSuperAdmin()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only superadmin can modify superadmin users',
+            ], 403);
+        }
 
         $request->validate([
             'name' => 'sometimes|string|max:255',
             'email' => 'sometimes|email|unique:users,email,' . $id,
             'password' => 'sometimes|string|min:8',
-            'user_type' => 'sometimes|in:personal,admin,instansi,gift',
+            'user_type' => 'sometimes|in:personal,admin,instansi,gift,superadmin',
             'notelp' => 'nullable|string|max:20',
             'negara' => 'nullable|string|max:100',
             'kota' => 'nullable|string|max:100',
         ]);
+
+        // SECURITY: Only superadmin can promote to superadmin
+        if ($request->has('user_type') && $request->user_type === 'superadmin' && !auth()->user()->isSuperAdmin()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only superadmin can promote users to superadmin',
+            ], 403);
+        }
 
         DB::beginTransaction();
         try {
@@ -212,8 +249,28 @@ class UserManagementController extends Controller
 
     public function destroy($id)
     {
+        // Check permission
+        Gate::authorize(Permission::DELETE_USERS->value);
+
         try {
             $user = User::findOrFail($id);
+
+            // SECURITY: Prevent deleting superadmin unless you are superadmin
+            if ($user->isSuperAdmin() && !auth()->user()->isSuperAdmin()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Only superadmin can delete superadmin users',
+                ], 403);
+            }
+
+            // SECURITY: Prevent deleting yourself
+            if ($user->id === auth()->id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You cannot delete your own account',
+                ], 403);
+            }
+
             $user->delete();
 
             return response()->json([
@@ -230,11 +287,15 @@ class UserManagementController extends Controller
 
     public function stats()
     {
+        // Check permission
+        Gate::authorize(Permission::VIEW_USERS->value);
+
         $totalUsers = User::count();
         $personalUsers = User::where('user_type', 'personal')->count();
         $instansiUsers = User::where('user_type', 'instansi')->count();
         $giftUsers = User::where('user_type', 'gift')->count();
         $adminUsers = User::where('user_type', 'admin')->count();
+        $superadminUsers = User::where('user_type', 'superadmin')->count();
 
         return response()->json([
             'total' => $totalUsers,
@@ -242,6 +303,7 @@ class UserManagementController extends Controller
             'instansi' => $instansiUsers,
             'gift' => $giftUsers,
             'admin' => $adminUsers,
+            'superadmin' => $superadminUsers,
         ]);
     }
 }

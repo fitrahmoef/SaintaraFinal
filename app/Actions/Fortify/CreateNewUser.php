@@ -32,7 +32,9 @@ class CreateNewUser implements CreatesNewUsers
             'negara' => ['nullable', 'string', 'max:255'],
             'kota' => ['nullable', 'string', 'max:255'],
             'password' => $this->passwordRules(),
-            'user_type' => ['nullable', 'in:personal,admin,instansi'],
+            // Note: superadmin should typically not be created via public registration
+            // Include it here for admin-initiated user creation flows
+            'user_type' => ['nullable', 'in:personal,admin,instansi,gift,superadmin'],
         ])->validate();
 
         return User::create([

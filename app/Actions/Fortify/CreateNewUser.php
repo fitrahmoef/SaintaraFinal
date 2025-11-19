@@ -3,6 +3,8 @@
 namespace App\Actions\Fortify;
 
 use App\Models\User;
+use App\Services\FreeTokenService;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
@@ -10,6 +12,13 @@ use Laravel\Fortify\Contracts\CreatesNewUsers;
 class CreateNewUser implements CreatesNewUsers
 {
     use PasswordValidationRules;
+
+    protected FreeTokenService $freeTokenService;
+
+    public function __construct(FreeTokenService $freeTokenService)
+    {
+        $this->freeTokenService = $freeTokenService;
+    }
 
     /**
      * Validate and create a newly registered user.
@@ -37,15 +46,24 @@ class CreateNewUser implements CreatesNewUsers
             'user_type' => ['nullable', 'in:personal,admin,instansi,gift,superadmin'],
         ])->validate();
 
-        return User::create([
-            'name' => $input['name'],
-            'namapanggilan' => $input['namapanggilan'] ?? null,
-            'email' => $input['email'],
-            'notelp' => $input['notelp'] ?? null,
-            'negara' => $input['negara'] ?? null,
-            'kota' => $input['kota'] ?? null,
-            'password' => $input['password'],
-            'user_type' => $input['user_type'] ?? 'personal',
-        ]);
+        return DB::transaction(function () use ($input) {
+            $user = User::create([
+                'name' => $input['name'],
+                'namapanggilan' => $input['namapanggilan'] ?? null,
+                'email' => $input['email'],
+                'notelp' => $input['notelp'] ?? null,
+                'negara' => $input['negara'] ?? null,
+                'kota' => $input['kota'] ?? null,
+                'password' => $input['password'],
+                'user_type' => $input['user_type'] ?? 'personal',
+            ]);
+
+            // Create customer profile with free tokens for personal users
+            if (($input['user_type'] ?? 'personal') === 'personal') {
+                $this->freeTokenService->createCustomerWithFreeTokens($user);
+            }
+
+            return $user;
+        });
     }
 }

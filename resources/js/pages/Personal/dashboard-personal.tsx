@@ -5,6 +5,7 @@ import {
     HiDownload,
     HiFire,
     HiQuestionMarkCircle,
+    HiGift,
 } from 'react-icons/hi';
 
 // Tipe Data
@@ -22,6 +23,8 @@ interface TokenBalance {
     total: number;
     used: number;
     available: number;
+    free_tokens: number;
+    purchased_available: number;
 }
 
 interface DashboardProps {
@@ -75,6 +78,30 @@ export default function Dashboard({ latestResult, tokenBalance }: DashboardProps
                             >
                                 Mulai Tes Sekarang
                             </Link>
+                        </div>
+                    )}
+
+                    {/* Free Token Welcome Card */}
+                    {tokenBalance.free_tokens > 0 && !latestResult && (
+                        <div className="rounded-lg bg-gradient-to-r from-green-50 to-blue-50 p-6 shadow-md border-2 border-green-200">
+                            <div className="flex items-start">
+                                <HiGift className="h-8 w-8 text-green-600 mr-3 mt-1 flex-shrink-0" />
+                                <div>
+                                    <h3 className="text-lg font-bold text-gray-800 mb-2">
+                                        Selamat Datang! Anda Mendapat Token Gratis!
+                                    </h3>
+                                    <p className="text-sm text-gray-700 mb-3">
+                                        Sebagai pengguna baru, Anda mendapat {tokenBalance.free_tokens} token gratis untuk mencoba tes karakter pertama Anda.
+                                        Jangan lewatkan kesempatan untuk mengenal diri Anda lebih dalam!
+                                    </p>
+                                    <Link
+                                        href="/personal/daftarTes"
+                                        className="inline-block rounded-lg bg-green-600 px-6 py-2 text-sm font-semibold text-white hover:bg-green-700"
+                                    >
+                                        Gunakan Token Gratis Sekarang →
+                                    </Link>
+                                </div>
+                            </div>
                         </div>
                     )}
 
@@ -137,7 +164,15 @@ export default function Dashboard({ latestResult, tokenBalance }: DashboardProps
                                     / {tokenBalance.total} Token
                                 </span>
                             </div>
-                            <p className="text-xs text-yellow-100">
+                            {tokenBalance.free_tokens > 0 && (
+                                <div className="mt-2 flex items-center gap-2">
+                                    <HiGift className="h-4 w-4 text-white" />
+                                    <span className="text-xs font-semibold text-white">
+                                        {tokenBalance.free_tokens} Token Gratis!
+                                    </span>
+                                </div>
+                            )}
+                            <p className="mt-2 text-xs text-yellow-100">
                                 {tokenBalance.used} token telah digunakan
                             </p>
                         </div>

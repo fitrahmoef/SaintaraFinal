@@ -3,26 +3,40 @@
 namespace App\Http\Controllers\Personal;
 
 use App\Http\Controllers\Controller;
+use App\Services\FreeTokenService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class PersonalDashboardController extends Controller
 {
+    protected FreeTokenService $freeTokenService;
+
+    public function __construct(FreeTokenService $freeTokenService)
+    {
+        $this->freeTokenService = $freeTokenService;
+    }
+
     public function index(Request $request)
     {
         $user = $request->user();
+        $customer = $user->customer;
 
         // Get latest test result with character type
         $latestResult = $user->latestTestResult();
 
-        // Get user's token balance
-        $tokens = $user->tokens()
-            ->where('payment_status', 'paid')
-            ->get();
-
-        $totalTokens = $tokens->sum('token_amount');
-        $usedTokens = $tokens->sum('tokens_used');
-        $availableTokens = $totalTokens - $usedTokens;
+        // Get token balance including free tokens
+        if ($customer) {
+            $tokenBalance = $this->freeTokenService->getTotalTokenBalance($customer);
+        } else {
+            $tokenBalance = [
+                'free_tokens' => 0,
+                'purchased_total' => 0,
+                'purchased_used' => 0,
+                'purchased_available' => 0,
+                'total_available' => 0,
+                'total_used' => 0,
+            ];
+        }
 
         return Inertia::render('Personal/dashboard-personal', [
             'latestResult' => $latestResult ? [
@@ -35,9 +49,11 @@ class PersonalDashboardController extends Controller
                 'communication_style' => $latestResult->characterType->communication_style,
             ] : null,
             'tokenBalance' => [
-                'total' => $totalTokens,
-                'used' => $usedTokens,
-                'available' => $availableTokens,
+                'total' => $tokenBalance['purchased_total'] + $tokenBalance['free_tokens'],
+                'used' => $tokenBalance['purchased_used'],
+                'available' => $tokenBalance['total_available'],
+                'free_tokens' => $tokenBalance['free_tokens'],
+                'purchased_available' => $tokenBalance['purchased_available'],
             ],
         ]);
     }

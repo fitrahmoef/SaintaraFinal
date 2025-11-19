@@ -81,11 +81,14 @@ class UserManagementController extends Controller
                 'name' => $request->name,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
-                'user_type' => $request->user_type,
                 'notelp' => $request->notelp,
                 'negara' => $request->negara,
                 'kota' => $request->kota,
             ]);
+
+            // SECURITY: Set user_type via protected method to prevent mass assignment exploit
+            $user->setUserType($request->user_type);
+            $user->save();
 
             // Create customer profile if applicable
             if (in_array($request->user_type, ['personal', 'gift'])) {
@@ -166,13 +169,19 @@ class UserManagementController extends Controller
 
         DB::beginTransaction();
         try {
-            $userData = $request->only(['name', 'email', 'user_type', 'notelp', 'negara', 'kota']);
+            $userData = $request->only(['name', 'email', 'notelp', 'negara', 'kota']);
 
             if ($request->has('password')) {
                 $userData['password'] = Hash::make($request->password);
             }
 
             $user->update($userData);
+
+            // SECURITY: Set user_type separately via protected method
+            if ($request->has('user_type')) {
+                $user->setUserType($request->user_type);
+                $user->save();
+            }
 
             // Update customer profile if exists
             if ($user->customer && $request->has('customer')) {

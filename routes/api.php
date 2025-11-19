@@ -8,7 +8,13 @@ use App\Http\Controllers\Personal\CertificateController;
 use App\Http\Controllers\Personal\PersonalProfileController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\TransactionManagementController;
+use App\Http\Controllers\Admin\PackageManagementController;
+use App\Http\Controllers\Admin\TestManagementController;
+use App\Http\Controllers\Admin\QuestionManagementController;
+use App\Http\Controllers\Instansi\InstansiDashboardController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\NotificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -23,6 +29,16 @@ use App\Http\Controllers\PaymentController;
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
+});
+
+// Notification Routes (All authenticated users)
+Route::middleware(['auth'])->prefix('notifications')->name('notifications.')->group(function () {
+    Route::get('/', [NotificationController::class, 'index'])->name('index');
+    Route::get('/unread-count', [NotificationController::class, 'unreadCount'])->name('unread-count');
+    Route::post('/{id}/read', [NotificationController::class, 'markAsRead'])->name('mark-read');
+    Route::post('/read-all', [NotificationController::class, 'markAllAsRead'])->name('mark-all-read');
+    Route::delete('/{id}', [NotificationController::class, 'destroy'])->name('destroy');
+    Route::delete('/read/clear', [NotificationController::class, 'clearRead'])->name('clear-read');
 });
 
 // Personal User Routes (Protected)
@@ -73,10 +89,52 @@ Route::middleware(['auth', 'user.type:admin'])->prefix('admin')->name('admin.')-
 
     // Dashboard
     Route::get('/dashboard/stats', [AdminDashboardController::class, 'index'])->name('dashboard.stats');
+
+    // Transaction Management
+    Route::get('/transactions', [TransactionManagementController::class, 'index'])->name('transactions.index');
+    Route::get('/transactions/stats', [TransactionManagementController::class, 'stats'])->name('transactions.stats');
+    Route::get('/transactions/export', [TransactionManagementController::class, 'export'])->name('transactions.export');
+    Route::get('/transactions/{id}', [TransactionManagementController::class, 'show'])->name('transactions.show');
+    Route::put('/transactions/{id}/status', [TransactionManagementController::class, 'updateStatus'])->name('transactions.update-status');
+
+    // Package Management
+    Route::get('/packages', [PackageManagementController::class, 'index'])->name('packages.index');
+    Route::post('/packages', [PackageManagementController::class, 'store'])->name('packages.store');
+    Route::get('/packages/{id}', [PackageManagementController::class, 'show'])->name('packages.show');
+    Route::put('/packages/{id}', [PackageManagementController::class, 'update'])->name('packages.update');
+    Route::delete('/packages/{id}', [PackageManagementController::class, 'destroy'])->name('packages.destroy');
+    Route::put('/packages/{id}/toggle-status', [PackageManagementController::class, 'toggleStatus'])->name('packages.toggle-status');
+
+    // Test Management
+    Route::get('/tests', [TestManagementController::class, 'index'])->name('tests.index');
+    Route::post('/tests', [TestManagementController::class, 'store'])->name('tests.store');
+    Route::get('/tests/{id}', [TestManagementController::class, 'show'])->name('tests.show');
+    Route::put('/tests/{id}', [TestManagementController::class, 'update'])->name('tests.update');
+    Route::delete('/tests/{id}', [TestManagementController::class, 'destroy'])->name('tests.destroy');
+    Route::put('/tests/{id}/toggle-status', [TestManagementController::class, 'toggleStatus'])->name('tests.toggle-status');
+    Route::post('/tests/{id}/duplicate', [TestManagementController::class, 'duplicate'])->name('tests.duplicate');
+
+    // Question Management
+    Route::get('/tests/{testId}/questions', [QuestionManagementController::class, 'index'])->name('questions.index');
+    Route::post('/tests/{testId}/questions', [QuestionManagementController::class, 'store'])->name('questions.store');
+    Route::post('/tests/{testId}/questions/bulk', [QuestionManagementController::class, 'bulkStore'])->name('questions.bulk-store');
+    Route::get('/questions/{id}', [QuestionManagementController::class, 'show'])->name('questions.show');
+    Route::put('/questions/{id}', [QuestionManagementController::class, 'update'])->name('questions.update');
+    Route::delete('/questions/{id}', [QuestionManagementController::class, 'destroy'])->name('questions.destroy');
+    Route::post('/questions/reorder', [QuestionManagementController::class, 'reorder'])->name('questions.reorder');
 });
 
 // Instansi Routes (Protected)
 Route::middleware(['auth', 'user.type:instansi'])->prefix('instansi')->name('instansi.')->group(function () {
+    // Dashboard
+    Route::get('/dashboard/stats', [InstansiDashboardController::class, 'index'])->name('dashboard.stats');
+    Route::get('/dashboard/employees', [InstansiDashboardController::class, 'employees'])->name('dashboard.employees');
+    Route::get('/dashboard/test-results', [InstansiDashboardController::class, 'testResults'])->name('dashboard.test-results');
+
+    // Employee Management
+    Route::post('/employees/bulk-upload', [InstansiDashboardController::class, 'bulkUpload'])->name('employees.bulk-upload');
+    Route::get('/employees/template', [InstansiDashboardController::class, 'downloadTemplate'])->name('employees.template');
+
     // Test submission for institutions
     Route::post('/tests/submit-batch', [TestController::class, 'submitBatch'])->name('tests.submit-batch');
 });

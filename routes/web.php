@@ -37,10 +37,14 @@ Route::get('/dashboard', function () {
 
     // Redirect based on user_type
     switch ($user->user_type) {
+        case 'superadmin':
+            // Superadmin uses personal dashboard with full access
+            return redirect()->route('personal.dashboard');
         case 'admin':
             return redirect()->route('admin.dashboard');
         case 'instansi':
             return redirect()->route('instansi.dashboard');
+        case 'gift':
         case 'personal':
         default:
             return redirect()->route('personal.dashboard');

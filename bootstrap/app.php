@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\AuditLogMiddleware;
+use App\Http\Middleware\CheckPermission;
 use App\Http\Middleware\CheckUserType;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -32,6 +33,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'user.type' => CheckUserType::class,
+            'permission' => CheckPermission::class,
             'audit' => AuditLogMiddleware::class,
         ]);
     })

@@ -91,21 +91,23 @@ class TestController extends Controller
 
         $test = Test::findOrFail($request->test_id);
 
-        // Check if user has enough tokens
-        $availableToken = TokenPurchase::where('customer_id', $customer->id)
-            ->active()
-            ->where('jumlah_tersisa', '>=', $test->token_required)
-            ->first();
-
-        if (!$availableToken) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Token tidak mencukupi'
-            ], 400);
-        }
-
         DB::beginTransaction();
         try {
+            // SECURITY FIX: Check token availability with row lock to prevent race conditions
+            // This ensures only one test can claim tokens at a time
+            $availableToken = TokenPurchase::where('customer_id', $customer->id)
+                ->active()
+                ->where('jumlah_tersisa', '>=', $test->token_required)
+                ->lockForUpdate()
+                ->first();
+
+            if (!$availableToken) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Token tidak mencukupi'
+                ], 400);
+            }
             // Validate customer data for character analysis
             if (!$customer->nama_lengkap || !$customer->tanggal_lahir || !$customer->golongan_darah) {
                 throw new \Exception('Data profil tidak lengkap. Harap lengkapi nama, tanggal lahir, dan golongan darah.');
@@ -486,19 +488,25 @@ class TestController extends Controller
                 'ip_address' => $request->ip(),
             ]);
 
-            // Record token usage WITH LOCK to prevent race condition
-            $tokenPurchase = $session->tokenPurchase;
-            if ($tokenPurchase) {
-                TokenUsage::create([
-                    'token_purchase_id' => $tokenPurchase->id,
-                    'test_result_id' => $testResult->id,
-                    'jumlah_digunakan' => $session->test->token_required,
-                    'keterangan' => 'Token digunakan untuk tes: ' . $session->test->nama_tes,
-                    'tanggal_penggunaan' => now(),
-                ]);
+            // SECURITY FIX: Lock token purchase to prevent race condition
+            // Reload with lockForUpdate to ensure atomic increment
+            if ($session->token_purchase_id) {
+                $tokenPurchase = TokenPurchase::where('id', $session->token_purchase_id)
+                    ->lockForUpdate()
+                    ->first();
 
-                // Update token purchase WITH LOCK
-                $tokenPurchase->increment('jumlah_terpakai', $session->test->token_required);
+                if ($tokenPurchase) {
+                    TokenUsage::create([
+                        'token_purchase_id' => $tokenPurchase->id,
+                        'test_result_id' => $testResult->id,
+                        'jumlah_digunakan' => $session->test->token_required,
+                        'keterangan' => 'Token digunakan untuk tes: ' . $session->test->nama_tes,
+                        'tanggal_penggunaan' => now(),
+                    ]);
+
+                    // Update token purchase with atomic increment
+                    $tokenPurchase->increment('jumlah_terpakai', $session->test->token_required);
+                }
             }
 
             // Generate certificate

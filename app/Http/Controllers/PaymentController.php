@@ -42,20 +42,24 @@ class PaymentController extends Controller
             // Handle notification dari Midtrans
             $notification = $this->midtransService->handleNotification();
 
-            // Find transaksi berdasarkan kode_transaksi (order_id)
-            $transaksi = Transaction::where('kode_transaksi', $notification['order_id'])->first();
-
-            if (!$transaksi) {
-                Log::error('Transaction not found', ['order_id' => $notification['order_id']]);
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Transaction not found',
-                ], 404);
-            }
-
-            // Update transaksi status
+            // Update transaksi status with row-level locking to prevent race conditions
             DB::beginTransaction();
             try {
+                // SECURITY FIX: Use lockForUpdate() to prevent payment race condition
+                // This ensures only one payment notification can process at a time
+                $transaksi = Transaction::where('kode_transaksi', $notification['order_id'])
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$transaksi) {
+                    DB::rollBack();
+                    Log::error('Transaction not found', ['order_id' => $notification['order_id']]);
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Transaction not found',
+                    ], 404);
+                }
+
                 $oldStatus = $transaksi->status_pembayaran;
                 $newStatus = $notification['status'];
 
@@ -135,8 +139,11 @@ class PaymentController extends Controller
     private function createTokenPurchase(Transaction $transaksi): void
     {
         try {
-            // Check if token purchase already exists
-            $existingPurchase = TokenPurchase::where('transaction_id', $transaksi->id)->first();
+            // SECURITY FIX: Check if token purchase already exists with row lock
+            // This prevents duplicate token creation in race conditions
+            $existingPurchase = TokenPurchase::where('transaction_id', $transaksi->id)
+                ->lockForUpdate()
+                ->first();
 
             if ($existingPurchase) {
                 Log::warning('Token purchase already exists for transaction', [

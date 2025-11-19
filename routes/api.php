@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Personal\TokenController;
 use App\Http\Controllers\Personal\TestController;
 use App\Http\Controllers\Personal\CertificateController;
+use App\Http\Controllers\Personal\PersonalProfileController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\PaymentController;
@@ -37,6 +38,13 @@ Route::middleware(['auth', 'user.type:personal'])->prefix('personal')->name('per
     Route::get('/tests/{id}', [TestController::class, 'show'])->name('tests.show');
     Route::post('/tests/submit', [TestController::class, 'submit'])->name('tests.submit');
 
+    // Test Session Management
+    Route::post('/tests/session/start', [TestController::class, 'startSession'])->name('tests.session.start');
+    Route::post('/tests/session/save-progress', [TestController::class, 'saveProgress'])->name('tests.session.save-progress');
+    Route::post('/tests/session/submit', [TestController::class, 'submitSession'])->name('tests.session.submit');
+    Route::post('/tests/session/abandon', [TestController::class, 'abandonSession'])->name('tests.session.abandon');
+    Route::get('/tests/session/status', [TestController::class, 'getSession'])->name('tests.session.status');
+
     // Test Results
     Route::get('/results', [TestController::class, 'results'])->name('results.index');
     Route::get('/results/{id}', [TestController::class, 'resultDetail'])->name('results.show');
@@ -45,6 +53,12 @@ Route::middleware(['auth', 'user.type:personal'])->prefix('personal')->name('per
     Route::get('/certificates/{id}/download', [CertificateController::class, 'download'])->name('certificates.download');
     Route::get('/certificates/{id}/view', [CertificateController::class, 'view'])->name('certificates.view');
     Route::get('/results/{id}/download', [CertificateController::class, 'downloadTestResult'])->name('results.download');
+
+    // Profile Management
+    Route::get('/profile', [PersonalProfileController::class, 'show'])->name('profile.show');
+    Route::put('/profile', [PersonalProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile/photo', [PersonalProfileController::class, 'uploadPhoto'])->name('profile.photo.upload');
+    Route::delete('/profile/photo', [PersonalProfileController::class, 'deletePhoto'])->name('profile.photo.delete');
 });
 
 // Admin Routes (Protected)

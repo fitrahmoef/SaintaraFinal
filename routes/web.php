@@ -160,6 +160,11 @@ Route::prefix('admin')->middleware(['auth', 'user.type:admin'])->group(function 
         return Inertia::render('Admin/Pengaturan');
     })->name('admin.settings');
 
+    Route::get('/auditLogs', function () {
+        // Pastikan file ada di: resources/js/Pages/Admin/AuditLogs.tsx
+        return Inertia::render('Admin/AuditLogs');
+    })->name('admin.audit-logs');
+
 });
 
 // instansi routes

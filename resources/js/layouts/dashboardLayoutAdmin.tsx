@@ -3,6 +3,7 @@ import React from 'react';
 import {
     HiBell,
     HiCalendar,
+    HiClipboardList,
     HiCog,
     HiCurrencyDollar,
     HiHome,
@@ -30,6 +31,7 @@ export default function DashboardLayout({
         },
         { name: 'Agenda', href: '/admin/agendaAdmin', icon: HiCalendar },
         { name: 'Pengguna', href: '/admin/penggunaAdmin', icon: HiUsers },
+        { name: 'Audit Logs', href: '/admin/auditLogs', icon: HiClipboardList },
         { name: 'Keuangan', href: '/admin/keuanganAdmin', icon: HiCurrencyDollar },
         { name: 'Tim', href: '/admin/teamAdmin', icon: HiUserGroup },
         {

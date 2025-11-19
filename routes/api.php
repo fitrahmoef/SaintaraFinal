@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\TransactionManagementController;
 use App\Http\Controllers\Admin\PackageManagementController;
 use App\Http\Controllers\Admin\TestManagementController;
 use App\Http\Controllers\Admin\QuestionManagementController;
+use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Instansi\InstansiDashboardController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\NotificationController;
@@ -98,12 +99,26 @@ Route::middleware(['auth', 'user.type:admin'])->prefix('admin')->name('admin.')-
         ->middleware('throttle:30,60')
         ->name('users.store');
     Route::get('/users/stats', [UserManagementController::class, 'stats'])->name('users.stats');
+    Route::get('/users/export', [UserManagementController::class, 'export'])->name('users.export');
+    Route::post('/users/bulk-delete', [UserManagementController::class, 'bulkDelete'])->name('users.bulk-delete');
+    Route::post('/users/bulk-update-type', [UserManagementController::class, 'bulkUpdateType'])->name('users.bulk-update-type');
     Route::get('/users/{id}', [UserManagementController::class, 'show'])->name('users.show');
+    Route::get('/users/{id}/details', [UserManagementController::class, 'details'])->name('users.details');
+    Route::get('/users/{id}/activity', [UserManagementController::class, 'activitySummary'])->name('users.activity');
     Route::put('/users/{id}', [UserManagementController::class, 'update'])->name('users.update');
     Route::delete('/users/{id}', [UserManagementController::class, 'destroy'])->name('users.destroy');
 
     // Dashboard
     Route::get('/dashboard/stats', [AdminDashboardController::class, 'index'])->name('dashboard.stats');
+
+    // Audit Logs
+    Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+    Route::get('/audit-logs/stats', [AuditLogController::class, 'stats'])->name('audit-logs.stats');
+    Route::get('/audit-logs/export', [AuditLogController::class, 'export'])->name('audit-logs.export');
+    Route::get('/audit-logs/actions', [AuditLogController::class, 'actions'])->name('audit-logs.actions');
+    Route::get('/audit-logs/modules', [AuditLogController::class, 'modules'])->name('audit-logs.modules');
+    Route::get('/audit-logs/{id}', [AuditLogController::class, 'show'])->name('audit-logs.show');
+    Route::get('/audit-logs/user/{userId}', [AuditLogController::class, 'userActivity'])->name('audit-logs.user-activity');
 
     // Transaction Management
     Route::get('/transactions', [TransactionManagementController::class, 'index'])->name('transactions.index');

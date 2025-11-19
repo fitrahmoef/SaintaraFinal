@@ -29,10 +29,6 @@ return new class extends Migration
             $table->index('tipe_paket');
             $table->index('is_active');
         });
-
-        // Add check constraints for PostgreSQL
-        DB::statement('ALTER TABLE packages ADD CONSTRAINT chk_packages_harga_positive CHECK (harga >= 0)');
-        DB::statement('ALTER TABLE packages ADD CONSTRAINT chk_packages_token_positive CHECK (jumlah_token > 0)');
     }
 
     /**

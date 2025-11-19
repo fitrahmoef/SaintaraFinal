@@ -12,11 +12,6 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Backup old tokens table
-        if (Schema::hasTable('tokens')) {
-            Schema::rename('tokens', 'old_tokens');
-        }
-
         Schema::create('token_purchases', function (Blueprint $table) {
             $table->id();
             $table->foreignId('customer_id')->constrained('customers')->onDelete('cascade');
@@ -27,7 +22,7 @@ return new class extends Migration
             $table->string('kode_token', 50)->unique(); // TKN-2025-00001
             $table->integer('jumlah_token'); // Total token yang dibeli
             $table->integer('jumlah_terpakai')->default(0); // Token yang sudah digunakan
-            $table->integer('jumlah_tersisa')->storedAs('jumlah_token - jumlah_terpakai'); // Computed column (stored for PostgreSQL)
+            // Note: jumlah_tersisa will be calculated in model accessor (jumlah_token - jumlah_terpakai)
 
             // Status & dates
             $table->enum('status', ['aktif', 'habis', 'kadaluarsa'])->default('aktif');
@@ -43,11 +38,6 @@ return new class extends Migration
             $table->index('tanggal_kadaluarsa');
             $table->index('kode_token');
         });
-
-        // Add check constraints for PostgreSQL
-        DB::statement('ALTER TABLE token_purchases ADD CONSTRAINT chk_token_jumlah_positive CHECK (jumlah_token > 0)');
-        DB::statement('ALTER TABLE token_purchases ADD CONSTRAINT chk_token_terpakai_positive CHECK (jumlah_terpakai >= 0)');
-        DB::statement('ALTER TABLE token_purchases ADD CONSTRAINT chk_token_terpakai_valid CHECK (jumlah_terpakai <= jumlah_token)');
     }
 
     /**
@@ -56,10 +46,5 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('token_purchases');
-
-        // Restore old tokens table
-        if (Schema::hasTable('old_tokens')) {
-            Schema::rename('old_tokens', 'tokens');
-        }
     }
 };

@@ -11,11 +11,6 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Backup old test_results table
-        if (Schema::hasTable('test_results')) {
-            Schema::rename('test_results', 'old_test_results');
-        }
-
         Schema::create('test_results', function (Blueprint $table) {
             $table->id();
             $table->foreignId('test_id')->constrained('tests')->onDelete('cascade');
@@ -53,10 +48,5 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('test_results');
-
-        // Restore old test_results table
-        if (Schema::hasTable('old_test_results')) {
-            Schema::rename('old_test_results', 'test_results');
-        }
     }
 };

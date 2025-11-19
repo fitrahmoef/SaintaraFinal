@@ -11,11 +11,6 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Rename existing transactions to old_transactions
-        if (Schema::hasTable('transactions')) {
-            Schema::rename('transactions', 'old_transactions');
-        }
-
         Schema::create('transactions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('customer_id')->constrained('customers')->onDelete('cascade');
@@ -55,10 +50,5 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('transactions');
-
-        // Restore old transactions table
-        if (Schema::hasTable('old_transactions')) {
-            Schema::rename('old_transactions', 'transactions');
-        }
     }
 };

@@ -47,17 +47,29 @@ Route::middleware(['auth', 'user.type:personal'])->prefix('personal')->name('per
     Route::get('/tokens', [TokenController::class, 'index'])->name('tokens.index');
     Route::get('/tokens/balance', [TokenController::class, 'balance'])->name('tokens.balance');
     Route::get('/tokens/packages', [TokenController::class, 'packages'])->name('tokens.packages');
-    Route::post('/tokens/purchase', [TokenController::class, 'purchase'])->name('tokens.purchase');
+    // CRITICAL: Rate limit token purchase to prevent abuse (5 purchases per hour)
+    Route::post('/tokens/purchase', [TokenController::class, 'purchase'])
+        ->middleware('throttle:5,60')
+        ->name('tokens.purchase');
 
     // Test Management
     Route::get('/tests', [TestController::class, 'index'])->name('tests.index');
     Route::get('/tests/{id}', [TestController::class, 'show'])->name('tests.show');
-    Route::post('/tests/submit', [TestController::class, 'submit'])->name('tests.submit');
+    // Rate limit test submission to prevent spam (10 per hour)
+    Route::post('/tests/submit', [TestController::class, 'submit'])
+        ->middleware('throttle:10,60')
+        ->name('tests.submit');
 
     // Test Session Management
-    Route::post('/tests/session/start', [TestController::class, 'startSession'])->name('tests.session.start');
-    Route::post('/tests/session/save-progress', [TestController::class, 'saveProgress'])->name('tests.session.save-progress');
-    Route::post('/tests/session/submit', [TestController::class, 'submitSession'])->name('tests.session.submit');
+    Route::post('/tests/session/start', [TestController::class, 'startSession'])
+        ->middleware('throttle:20,60')
+        ->name('tests.session.start');
+    Route::post('/tests/session/save-progress', [TestController::class, 'saveProgress'])
+        ->middleware('throttle:60,60')
+        ->name('tests.session.save-progress');
+    Route::post('/tests/session/submit', [TestController::class, 'submitSession'])
+        ->middleware('throttle:10,60')
+        ->name('tests.session.submit');
     Route::post('/tests/session/abandon', [TestController::class, 'abandonSession'])->name('tests.session.abandon');
     Route::get('/tests/session/status', [TestController::class, 'getSession'])->name('tests.session.status');
 
@@ -81,7 +93,10 @@ Route::middleware(['auth', 'user.type:personal'])->prefix('personal')->name('per
 Route::middleware(['auth', 'user.type:admin'])->prefix('admin')->name('admin.')->group(function () {
     // User Management
     Route::get('/users', [UserManagementController::class, 'index'])->name('users.index');
-    Route::post('/users', [UserManagementController::class, 'store'])->name('users.store');
+    // Rate limit user creation to prevent abuse
+    Route::post('/users', [UserManagementController::class, 'store'])
+        ->middleware('throttle:30,60')
+        ->name('users.store');
     Route::get('/users/stats', [UserManagementController::class, 'stats'])->name('users.stats');
     Route::get('/users/{id}', [UserManagementController::class, 'show'])->name('users.show');
     Route::put('/users/{id}', [UserManagementController::class, 'update'])->name('users.update');
@@ -141,8 +156,11 @@ Route::middleware(['auth', 'user.type:instansi'])->prefix('instansi')->name('ins
 
 // Payment Routes (Public - for Midtrans callback)
 Route::prefix('payment')->name('payment.')->group(function () {
-    // Midtrans notification callback (MUST BE PUBLIC)
-    Route::post('/notification', [PaymentController::class, 'handleNotification'])->name('notification');
+    // Midtrans notification callback (MUST BE PUBLIC but rate limited)
+    // CRITICAL: Rate limit to prevent webhook abuse (100 per minute per IP)
+    Route::post('/notification', [PaymentController::class, 'handleNotification'])
+        ->middleware('throttle:100,1')
+        ->name('notification');
 });
 
 // Payment Routes (Protected)

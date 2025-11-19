@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\AuditLogMiddleware;
 use App\Http\Middleware\CheckUserType;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -24,8 +25,14 @@ return Application::configure(basePath: dirname(__DIR__))
             AddLinkHeadersForPreloadedAssets::class,
         ]);
 
+        // Add audit logging to API routes for security tracking
+        $middleware->api(append: [
+            AuditLogMiddleware::class,
+        ]);
+
         $middleware->alias([
             'user.type' => CheckUserType::class,
+            'audit' => AuditLogMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

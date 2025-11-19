@@ -6,12 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Customer;
 use App\Models\TestResult;
-use App\Models\Token;
+// use App\Models\Token; // DEPRECATED: Use TokenPurchase instead
+use App\Models\TokenPurchase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use League\Csv\Reader;
 use League\Csv\Writer;
 
@@ -37,16 +39,18 @@ class InstansiDashboardController extends Controller
             // Total employees (sub-accounts under this institution)
             'total_employees' => User::where('parent_instansi_id', $user->id)->count(),
 
-            // Active tokens
-            'active_tokens' => Token::where('customer_id', $customer->id)
-                ->where('status_token', 'tersedia')
-                ->where('tanggal_kadaluarsa', '>', now())
-                ->count(),
+            // Active tokens (FIXED: Use TokenPurchase with correct fields)
+            'active_tokens' => TokenPurchase::where('customer_id', $customer->id)
+                ->where('status', 'aktif')
+                ->where(function ($query) {
+                    $query->whereNull('tanggal_kadaluarsa')
+                        ->orWhere('tanggal_kadaluarsa', '>', now());
+                })
+                ->sum(DB::raw('jumlah_token - jumlah_terpakai')),
 
-            // Used tokens
-            'used_tokens' => Token::where('customer_id', $customer->id)
-                ->where('status_token', 'terpakai')
-                ->count(),
+            // Used tokens (FIXED: Calculate from TokenPurchase)
+            'used_tokens' => TokenPurchase::where('customer_id', $customer->id)
+                ->sum('jumlah_terpakai'),
 
             // Completed tests
             'completed_tests' => TestResult::whereHas('customer.user', function ($query) use ($user) {
@@ -73,14 +77,14 @@ class InstansiDashboardController extends Controller
                 ->limit(5)
                 ->get(),
 
-            // Character type distribution
-            'character_distribution' => TestResult::select('tipe_karakter_dominan', DB::raw('count(*) as total'))
+            // Character type distribution (FIXED: Use hasil_karakter instead of non-existent tipe_karakter_dominan)
+            'character_distribution' => TestResult::select('hasil_karakter', DB::raw('count(*) as total'))
                 ->whereHas('customer.user', function ($query) use ($user) {
                     $query->where('parent_instansi_id', $user->id)
                         ->orWhere('id', $user->id);
                 })
-                ->whereNotNull('tipe_karakter_dominan')
-                ->groupBy('tipe_karakter_dominan')
+                ->whereNotNull('hasil_karakter')
+                ->groupBy('hasil_karakter')
                 ->get(),
         ];
 
@@ -207,19 +211,20 @@ class InstansiDashboardController extends Controller
                     }
 
                     // Create user account for employee
-                    $password = $record['password'] ?? substr(str_shuffle('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'), 0, 12);
+                    // SECURITY: Use Str::random() for cryptographically secure password generation
+                    $password = $record['password'] ?? Str::random(16);
 
                     $employee = User::create([
-                        'nama_lengkap' => $record['nama_lengkap'],
+                        'name' => $record['nama_lengkap'],
                         'email' => $record['email'],
                         'password' => Hash::make($password),
-                        'nomor_telepon' => $record['nomor_telepon'] ?? null,
-                        'tanggal_lahir' => $record['tanggal_lahir'] ?? null,
-                        'jenis_kelamin' => $record['jenis_kelamin'] ?? null,
-                        'alamat' => $record['alamat'] ?? null,
-                        'tipe_pengguna' => 'personal',
-                        'parent_instansi_id' => $user->id,
+                        'notelp' => $record['nomor_telepon'] ?? null,
+                        // Note: tanggal_lahir, jenis_kelamin, alamat not in User model
                     ]);
+
+                    // SECURITY: Set user_type via protected method
+                    $employee->setUserType('personal');
+                    $employee->save();
 
                     // Create customer record for employee
                     $employeeCustomer = Customer::create([

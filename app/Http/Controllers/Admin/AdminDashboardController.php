@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Agenda;
 use App\Models\Team;
 use App\Models\TestResult;
-use App\Models\Token;
+// use App\Models\Token; // DEPRECATED: Use TokenPurchase instead
 use App\Models\Transaction;
 use App\Models\User;
 use Carbon\Carbon;
@@ -21,14 +21,15 @@ class AdminDashboardController extends Controller
         $currentMonth = Carbon::now()->month;
         $currentYear = Carbon::now()->year;
 
-        // Total tests this month
-        $totalTestsThisMonth = TestResult::whereMonth('test_date', $currentMonth)
-            ->whereYear('test_date', $currentYear)
+        // Total tests this month (FIXED: changed test_date to tanggal_tes)
+        $totalTestsThisMonth = TestResult::whereMonth('tanggal_tes', $currentMonth)
+            ->whereYear('tanggal_tes', $currentYear)
             ->count();
 
-        // Active agents (users with user_type 'personal' who have made purchases)
+        // Active agents (users with user_type 'personal' who have made token purchases)
+        // FIXED: Changed from 'tokens' to 'customer.tokenPurchases'
         $activeAgents = User::where('user_type', 'personal')
-            ->has('tokens')
+            ->whereHas('customer.tokenPurchases')
             ->count();
 
         // Count agendas by type
@@ -41,15 +42,17 @@ class AdminDashboardController extends Controller
             ->count();
 
         // Test distribution (Personal, Institution, Gift)
-        $personalTests = TestResult::where('test_type', 'personal')->count();
-        $institutionTests = TestResult::where('test_type', 'instansi')->count();
-        $giftTests = TestResult::where('test_type', 'gift')->count();
+        // NOTE: test_type field needs to be added to test_results table via migration
+        // For now, return 0 to prevent SQL errors
+        $personalTests = 0; // TODO: Re-enable after migration: TestResult::where('test_type', 'personal')->count();
+        $institutionTests = 0; // TODO: Re-enable after migration: TestResult::where('test_type', 'instansi')->count();
+        $giftTests = 0; // TODO: Re-enable after migration: TestResult::where('test_type', 'gift')->count();
 
-        // Token sales this month
-        $tokenSalesThisMonth = Token::whereMonth('created_at', $currentMonth)
-            ->whereYear('created_at', $currentYear)
-            ->where('payment_status', 'paid')
-            ->sum('price');
+        // Token sales this month (FIXED: Use TokenPurchase via Transaction instead of old Token model)
+        $tokenSalesThisMonth = \App\Models\Transaction::whereMonth('waktu_dibuat', $currentMonth)
+            ->whereYear('waktu_dibuat', $currentYear)
+            ->where('status_pembayaran', 'dibayar')
+            ->sum('jumlah_bayar');
 
         // Team daily reports (last 3 team members who submitted reports)
         $teamReports = Team::where('status', 'active')

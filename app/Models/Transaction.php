@@ -12,7 +12,7 @@ class Transaction extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'customer_id',
+        // 'customer_id', // SECURITY: Removed to prevent transaction hijacking via mass assignment
         'package_id',
         'payment_gateway_id',
         'kode_transaksi',
@@ -26,6 +26,15 @@ class Transaction extends Model
         'waktu_dibayar',
         'waktu_kadaluarsa',
     ];
+
+    /**
+     * Set the customer for this transaction (protected method)
+     * Must be set explicitly by controller to prevent manipulation
+     */
+    public function setCustomer(int $customerId): void
+    {
+        $this->customer_id = $customerId;
+    }
 
     protected $casts = [
         'jumlah_bayar' => 'decimal:2',

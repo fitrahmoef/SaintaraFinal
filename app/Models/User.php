@@ -28,8 +28,20 @@ class User extends Authenticatable
         'negara',
         'kota',
         'password',
-        'user_type',
+        // 'user_type', // SECURITY: Removed to prevent privilege escalation via mass assignment
     ];
+
+    /**
+     * Set the user type (protected method)
+     * Only use this in controlled contexts (registration, admin operations)
+     */
+    public function setUserType(string $type): void
+    {
+        if (!in_array($type, ['personal', 'admin', 'instansi', 'gift'])) {
+            throw new \InvalidArgumentException('Invalid user type');
+        }
+        $this->user_type = $type;
+    }
 
     /**
      * The attributes that should be hidden for serialization.
@@ -67,10 +79,11 @@ class User extends Authenticatable
         return $this->hasMany(TestResult::class);
     }
 
-    public function tokens(): HasMany
-    {
-        return $this->hasMany(Token::class);
-    }
+    // DEPRECATED: Old Token model - use customer->tokenPurchases instead
+    // public function tokens(): HasMany
+    // {
+    //     return $this->hasMany(Token::class);
+    // }
 
     public function transactions(): HasMany
     {

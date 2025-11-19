@@ -118,8 +118,7 @@ class TokenController extends Controller
             $kodeTransaksi = Transaction::generateKodeTransaksi();
 
             // Create transaction with pending status
-            $transaction = Transaction::create([
-                'customer_id' => $customer->id,
+            $transaction = new Transaction([
                 'package_id' => $package->id,
                 'payment_gateway_id' => $request->payment_gateway_id,
                 'kode_transaksi' => $kodeTransaksi,
@@ -129,6 +128,10 @@ class TokenController extends Controller
                 'waktu_dibuat' => now(),
                 'waktu_kadaluarsa' => now()->addHours(24),
             ]);
+
+            // SECURITY: Set customer_id explicitly to prevent manipulation
+            $transaction->setCustomer($customer->id);
+            $transaction->save();
 
             // Prepare order details for Midtrans
             $orderDetails = [

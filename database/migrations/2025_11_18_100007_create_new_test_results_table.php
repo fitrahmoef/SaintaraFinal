@@ -33,7 +33,7 @@ return new class extends Migration
             $table->timestamp('tanggal_tes')->useCurrent();
             $table->timestamp('waktu_mulai')->nullable();
             $table->timestamp('waktu_selesai')->nullable();
-            $table->integer('durasi_detik')->virtualAs('TIMESTAMPDIFF(SECOND, waktu_mulai, waktu_selesai)'); // Computed
+            $table->integer('durasi_detik')->nullable(); // Will be calculated in application or model accessor
             $table->string('ip_address', 45)->nullable();
             $table->timestamps();
             $table->softDeletes();

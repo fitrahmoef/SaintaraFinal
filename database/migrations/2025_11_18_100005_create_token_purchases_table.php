@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -26,7 +27,7 @@ return new class extends Migration
             $table->string('kode_token', 50)->unique(); // TKN-2025-00001
             $table->integer('jumlah_token'); // Total token yang dibeli
             $table->integer('jumlah_terpakai')->default(0); // Token yang sudah digunakan
-            $table->integer('jumlah_tersisa')->virtualAs('jumlah_token - jumlah_terpakai'); // Computed column
+            $table->integer('jumlah_tersisa')->storedAs('jumlah_token - jumlah_terpakai'); // Computed column (stored for PostgreSQL)
 
             // Status & dates
             $table->enum('status', ['aktif', 'habis', 'kadaluarsa'])->default('aktif');
@@ -41,12 +42,12 @@ return new class extends Migration
             $table->index('status');
             $table->index('tanggal_kadaluarsa');
             $table->index('kode_token');
-
-            // Constraints
-            $table->check('jumlah_token > 0', 'chk_token_jumlah_positive');
-            $table->check('jumlah_terpakai >= 0', 'chk_token_terpakai_positive');
-            $table->check('jumlah_terpakai <= jumlah_token', 'chk_token_terpakai_valid');
         });
+
+        // Add check constraints for PostgreSQL
+        DB::statement('ALTER TABLE token_purchases ADD CONSTRAINT chk_token_jumlah_positive CHECK (jumlah_token > 0)');
+        DB::statement('ALTER TABLE token_purchases ADD CONSTRAINT chk_token_terpakai_positive CHECK (jumlah_terpakai >= 0)');
+        DB::statement('ALTER TABLE token_purchases ADD CONSTRAINT chk_token_terpakai_valid CHECK (jumlah_terpakai <= jumlah_token)');
     }
 
     /**

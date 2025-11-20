@@ -19,8 +19,21 @@ return new class extends Migration
             return;
         }
 
-        // For MySQL/PostgreSQL
-        DB::statement("ALTER TABLE users MODIFY COLUMN user_type ENUM('personal', 'admin', 'instansi', 'gift', 'superadmin') DEFAULT 'personal'");
+        if (DB::getDriverName() === 'pgsql') {
+            // PostgreSQL: Drop and recreate the column with updated enum values
+            // First, we need to drop the existing CHECK constraint
+            $constraints = DB::select("SELECT conname FROM pg_constraint WHERE conrelid = 'users'::regclass AND conname LIKE '%user_type%'");
+            foreach ($constraints as $constraint) {
+                DB::statement("ALTER TABLE users DROP CONSTRAINT IF EXISTS {$constraint->conname}");
+            }
+
+            // Now recreate the column with new enum values
+            DB::statement("ALTER TABLE users ALTER COLUMN user_type TYPE VARCHAR(255)");
+            DB::statement("ALTER TABLE users ADD CONSTRAINT users_user_type_check CHECK (user_type IN ('personal', 'admin', 'instansi', 'gift', 'superadmin'))");
+        } else {
+            // MySQL
+            DB::statement("ALTER TABLE users MODIFY COLUMN user_type ENUM('personal', 'admin', 'instansi', 'gift', 'superadmin') DEFAULT 'personal'");
+        }
     }
 
     /**
@@ -32,7 +45,14 @@ return new class extends Migration
             return;
         }
 
-        // Remove superadmin and gift from enum
+        if (DB::getDriverName() === 'pgsql') {
+            // PostgreSQL doesn't support removing enum values easily
+            // This would require recreating the type, which is complex
+            // For development, we'll leave it as-is
+            return;
+        }
+
+        // MySQL: Remove superadmin and gift from enum
         DB::statement("ALTER TABLE users MODIFY COLUMN user_type ENUM('personal', 'admin', 'instansi') DEFAULT 'personal'");
     }
 };

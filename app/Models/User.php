@@ -6,6 +6,7 @@ namespace App\Models;
 use App\Enums\Permission;
 use App\Enums\Role;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -232,5 +233,45 @@ class User extends Authenticatable
     public function latestTestResult()
     {
         return $this->testResults()->latest()->with('characterType')->first();
+    }
+
+    /**
+     * Relationship: User has one AdminInstansi profile
+     */
+    public function adminInstansi(): HasOne
+    {
+        return $this->hasOne(AdminInstansi::class);
+    }
+
+    /**
+     * Relationship: User belongs to a parent institution (for employees)
+     */
+    public function parentInstitution(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'parent_instansi_id');
+    }
+
+    /**
+     * Relationship: User has many employees (for institution admins)
+     */
+    public function employees(): HasMany
+    {
+        return $this->hasMany(User::class, 'parent_instansi_id');
+    }
+
+    /**
+     * Relationship: User has many team members
+     */
+    public function team(): HasOne
+    {
+        return $this->hasOne(Team::class);
+    }
+
+    /**
+     * Relationship: User has many activity logs
+     */
+    public function activityLogs(): HasMany
+    {
+        return $this->hasMany(ActivityLog::class);
     }
 }

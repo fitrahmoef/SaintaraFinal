@@ -160,6 +160,26 @@ Route::prefix('admin')->middleware(['auth', 'user.type:admin'])->group(function 
         return Inertia::render('Admin/Pengaturan');
     })->name('admin.settings');
 
+    // User Management
+    Route::get('/users', function () {
+        return Inertia::render('Admin/UserManagement');
+    })->name('admin.users');
+
+    // User Detail/Monitoring
+    Route::get('/users/{id}/detail', function ($id) {
+        return Inertia::render('Admin/UserDetail', ['userId' => $id]);
+    })->name('admin.users.detail');
+
+    // Institution Management
+    Route::get('/institutions', function () {
+        return Inertia::render('Admin/InstitutionManagement');
+    })->name('admin.institutions');
+
+    // Institution Detail
+    Route::get('/institutions/{id}/detail', function ($id) {
+        return Inertia::render('Admin/InstitutionDetail', ['institutionId' => $id]);
+    })->name('admin.institutions.detail');
+
 });
 
 // instansi routes

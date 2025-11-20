@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -70,17 +71,17 @@ return new class extends Migration
 
         // TESTS TABLE - Active tests filtering
         Schema::table('tests', function (Blueprint $table) {
-            // Index for status filtering
-            $table->index('status', 'idx_tests_status');
+            // Index for is_active filtering (already exists, skip)
+            // $table->index('is_active', 'idx_tests_is_active');
 
-            // Index for test type filtering
-            $table->index('jenis_tes', 'idx_tests_jenis_tes');
+            // Index for test type filtering (already exists, skip)
+            // $table->index('jenis_tes', 'idx_tests_jenis_tes');
         });
 
         // PACKAGES TABLE - Active packages filtering
         Schema::table('packages', function (Blueprint $table) {
-            // Index for status filtering
-            $table->index('status', 'idx_packages_status');
+            // Index for is_active filtering (already exists, skip)
+            // $table->index('is_active', 'idx_packages_is_active');
         });
 
         // CERTIFICATES TABLE - Verification lookups
@@ -119,12 +120,14 @@ return new class extends Migration
         });
 
         Schema::table('packages', function (Blueprint $table) {
-            $table->dropIndex('idx_packages_status');
+            // Index already exists from creation, no need to drop
+            // $table->dropIndex('idx_packages_status');
         });
 
         Schema::table('tests', function (Blueprint $table) {
-            $table->dropIndex('idx_tests_status');
-            $table->dropIndex('idx_tests_jenis_tes');
+            // Indexes already exist from creation, no need to drop
+            // $table->dropIndex('idx_tests_status');
+            // $table->dropIndex('idx_tests_jenis_tes');
         });
 
         Schema::table('customers', function (Blueprint $table) {
@@ -161,10 +164,25 @@ return new class extends Migration
      */
     private function indexExists(string $table, string $index): bool
     {
-        $connection = Schema::getConnection();
-        $doctrineSchemaManager = $connection->getDoctrineSchemaManager();
-        $doctrineTable = $doctrineSchemaManager->introspectTable($table);
+        $driver = DB::getDriverName();
 
-        return $doctrineTable->hasIndex($index);
+        if ($driver === 'pgsql') {
+            // PostgreSQL
+            $result = DB::selectOne(
+                "SELECT 1 FROM pg_indexes WHERE tablename = ? AND indexname = ?",
+                [$table, $index]
+            );
+            return (bool) $result;
+        } elseif ($driver === 'mysql') {
+            // MySQL
+            $result = DB::selectOne(
+                "SHOW INDEX FROM {$table} WHERE Key_name = ?",
+                [$index]
+            );
+            return (bool) $result;
+        } else {
+            // SQLite - always return false to try creating the index
+            return false;
+        }
     }
 };

@@ -12,6 +12,8 @@ use App\Http\Controllers\Admin\TransactionManagementController;
 use App\Http\Controllers\Admin\PackageManagementController;
 use App\Http\Controllers\Admin\TestManagementController;
 use App\Http\Controllers\Admin\QuestionManagementController;
+use App\Http\Controllers\Api\Admin\InstitutionManagementController;
+use App\Http\Controllers\Api\Admin\UserMonitoringController;
 use App\Http\Controllers\Instansi\InstansiDashboardController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\NotificationController;
@@ -137,6 +139,28 @@ Route::middleware(['auth', 'user.type:admin'])->prefix('admin')->name('admin.')-
     Route::put('/questions/{id}', [QuestionManagementController::class, 'update'])->name('questions.update');
     Route::delete('/questions/{id}', [QuestionManagementController::class, 'destroy'])->name('questions.destroy');
     Route::post('/questions/reorder', [QuestionManagementController::class, 'reorder'])->name('questions.reorder');
+
+    // Institution Management
+    Route::get('/institutions', [InstitutionManagementController::class, 'index'])->name('institutions.index');
+    Route::get('/institutions/stats', [InstitutionManagementController::class, 'getStats'])->name('institutions.stats');
+    Route::post('/institutions', [InstitutionManagementController::class, 'store'])
+        ->middleware('throttle:30,60')
+        ->name('institutions.store');
+    Route::get('/institutions/{id}', [InstitutionManagementController::class, 'show'])->name('institutions.show');
+    Route::put('/institutions/{id}', [InstitutionManagementController::class, 'update'])->name('institutions.update');
+    Route::delete('/institutions/{id}', [InstitutionManagementController::class, 'destroy'])->name('institutions.destroy');
+    Route::put('/institutions/{id}/status', [InstitutionManagementController::class, 'updateStatus'])->name('institutions.update-status');
+    Route::post('/institutions/{id}/extend-expiry', [InstitutionManagementController::class, 'extendExpiry'])->name('institutions.extend-expiry');
+    Route::get('/institutions/{id}/employees', [InstitutionManagementController::class, 'getEmployees'])->name('institutions.employees');
+    Route::get('/institutions/export', [InstitutionManagementController::class, 'export'])->name('institutions.export');
+
+    // User Monitoring
+    Route::get('/users/{id}/monitor', [UserMonitoringController::class, 'show'])->name('users.monitor');
+    Route::get('/users/{id}/activity-timeline', [UserMonitoringController::class, 'getActivityTimeline'])->name('users.activity-timeline');
+    Route::get('/users/{id}/test-performance', [UserMonitoringController::class, 'getTestPerformance'])->name('users.test-performance');
+    Route::put('/users/{id}/notes', [UserMonitoringController::class, 'updateNotes'])->name('users.update-notes');
+    Route::post('/users/{id}/tokens/add', [UserMonitoringController::class, 'addTokens'])->name('users.add-tokens');
+    Route::post('/users/{id}/tokens/deduct', [UserMonitoringController::class, 'deductTokens'])->name('users.deduct-tokens');
 });
 
 // Instansi Routes (Protected)
